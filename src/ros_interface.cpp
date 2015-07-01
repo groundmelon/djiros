@@ -259,11 +259,11 @@ void interface_control_callback(const sensor_msgs::Joy& msg)
 	ctrl_cmd.yaw = msg.axes[3];
 	if (msg.axes[4] > 0)
 	{
-		ctrl_cmd.ctrl_flag = 0x20; // 0b00100000, mode 13
+		ctrl_cmd.ctrl_flag = 0b00100010; // 0b00100000, mode 13
 	}
 	else
 	{
-		ctrl_cmd.ctrl_flag = 0x00; // 0b00000000, mode 1
+		ctrl_cmd.ctrl_flag = 0b00000010; // 0b00000000, mode 1
 	}
 	ctrl_updated = true;
 }
