@@ -1,3 +1,31 @@
+/******** RC Map *********
+*
+*  +8000 <--->  0  <---> -8000
+*   API  <---> ATT <--->  POS
+*
+*        CH3 +10000                     CH1 +10000             
+*               ^                              ^               
+*               |                              |                   / -10000
+*    CH2        |                   CH0        |                  /
+*  -10000 <-----------> +10000    -10000 <-----------> +10000    H
+*               |                              |                  \
+*               |                              |                   \ -4545
+*               V                              V               
+*            -10000                         -10000             
+*
+********** Frames **********
+*                                  
+*       N(orth)                    U(p)  
+*      /                           |
+*     /                            |    F(orward)             
+*    /______ E(ast)                |  /            
+*    |                             | /                      
+*    |                      ______ |/                       
+*    |D(own)               L(eft)         
+*
+*
+****************************************/
+
 #include "ros_interface.h"
 
 #include <cmath>
@@ -149,7 +177,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs)
 		sensor_msgs::Imu imu_msg;
 		{
 			imu_msg.header.stamp = tick_time;
-			imu_msg.header.frame_id = std::string("body");
+			imu_msg.header.frame_id = std::string("FLU");
 			Quaterniond q_ros(Matrix3d(ros_R_fc * gRb * ros_R_fc.transpose()));
 			imu_msg.orientation.x = q_ros.x();
 			imu_msg.orientation.y = q_ros.y();
