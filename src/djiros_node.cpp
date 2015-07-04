@@ -130,8 +130,7 @@ int16_t sdk_std_msgs_handler(uint8_t cmd_id,uint8_t* pbuf,uint16_t len,req_id_t 
 	_recv_std_msgs( *msg_enable_flag, ENABLE_MSG_BATTERY, recv_sdk_std_msgs.battery_remaining_capacity	, pbuf, data_len);
 	_recv_std_msgs( *msg_enable_flag, ENABLE_MSG_DEVICE	, recv_sdk_std_msgs.ctrl_device			, pbuf, data_len);
 
-
-	ros_process_sdk_std_msg(recv_sdk_std_msgs);
+	ros_process_sdk_std_msg(recv_sdk_std_msgs, *msg_enable_flag);
 
 	/* testing reciever frequence */
 	if( (*msg_enable_flag & ENABLE_MSG_DEVICE))

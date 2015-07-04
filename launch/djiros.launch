@@ -1,7 +1,7 @@
 <launch>
 	<node pkg="djiros" type="djiros_node" name="djiros" output="screen">
 		<!-- node parameters -->
-		<param name="serial_name" type="string" value="/dev/ttyUSB0"/>
+		<param name="serial_name" type="string" value="/dev/ttyUSBNcore"/>
 		<param name="baud_rate" type="int" value="230400"/>
 		<param name="app_id" type="int" value="$(env DJIROS_APPID)"/>
 		<param name="app_api_level" type="int" value="2"/>

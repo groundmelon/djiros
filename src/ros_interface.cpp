@@ -91,11 +91,12 @@ void interface_init(ros::NodeHandle& nh)
 	pub_time_ref = nh.advertise<sensor_msgs::TimeReference>("tick", 10);
 }
 
-void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs)
+void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t msg_flags)
 {
 	ros::Time now_time = ros::Time::now();
 	
-	if (align_state == ALIGN_UNINITED)
+	// only use 100HZ imu bag (0x3f) to align
+	if (align_state == ALIGN_UNINITED && ((msg_flags & 0x3F)==0x3F) )
 	{
 		base_time = now_time - _TICK2ROSTIME(recv_sdk_std_msgs.time_stamp);
 		align_state = ALIGN_RUNNING;
@@ -103,7 +104,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs)
 		return;
 	}
 
-	if (align_state == ALIGN_RUNNING)
+	if (align_state == ALIGN_RUNNING && ((msg_flags & 0x3F)==0x3F) )
 	{
 		if (alignArray.size() < ALIGN_BUFFER_SIZE)
 		{
@@ -150,6 +151,10 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs)
 	{
 		ros::Time tick_time = base_time + _TICK2ROSTIME(recv_sdk_std_msgs.time_stamp);
 		double dt = (now_time - tick_time).toSec();
+// printf("recv:%d\ntick%f\n",
+// 	recv_sdk_std_msgs.time_stamp,
+// 	tick_time.toSec()
+// 	);
 		if (std::fabs(dt) > TIME_DIFF_ALERT)
 		{
 			ROS_WARN("[WARN] SysTime - TickTime = %.0f ms", dt*1000);
@@ -221,7 +226,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs)
 		}
 
 		sensor_msgs::Joy rc_msg;
-		{	// TODO: what is the scale?????????
+		{
 			rc_msg.header.stamp = tick_time;
 			rc_msg.header.frame_id = std::string("rc");
 			rc_msg.axes.push_back((double)recv_sdk_std_msgs.rc.roll/10000.0);
@@ -251,13 +256,41 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs)
 			tmr_msg.time_ref = ros::Time((double)recv_sdk_std_msgs.time_stamp);
 		}
 
-		pub_imu.publish(imu_msg);
-		pub_velo.publish(velo_msg);
-		pub_gps.publish(gps_msg);
-		pub_mag.publish(mag_msg);
-		pub_rc.publish(rc_msg);
-		pub_gimbal.publish(gmb_msg);
-		pub_time_ref.publish(tmr_msg);
+		if ((msg_flags & ENABLE_MSG_Q) && (msg_flags & ENABLE_MSG_A) && (msg_flags & ENABLE_MSG_W))
+		{
+			pub_imu.publish(imu_msg);
+		}
+
+		if ((msg_flags & ENABLE_MSG_V))
+		{
+			pub_velo.publish(velo_msg);
+		}
+
+		if ((msg_flags & ENABLE_MSG_POS))
+		{
+			pub_gps.publish(gps_msg);
+		}
+
+		if ((msg_flags & ENABLE_MSG_MAG))
+		{
+			pub_mag.publish(mag_msg);
+		}
+
+		if ((msg_flags & ENABLE_MSG_RC))
+		{
+			pub_rc.publish(rc_msg);
+		}
+
+		if ((msg_flags & ENABLE_MSG_GIMBAL))
+		{
+			pub_gimbal.publish(gmb_msg);
+		}
+		
+		if ((msg_flags & ENABLE_MSG_TIME))
+		{
+			pub_time_ref.publish(tmr_msg);
+		}
+		
 
 		// judge mode select channel to acquire control
 		if (recv_sdk_std_msgs.rc.mode > 5000)
