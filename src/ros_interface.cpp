@@ -3,25 +3,25 @@
 *  +8000 <--->  0  <---> -8000
 *   API  <---> ATT <--->  POS
 *
-*        CH3 +10000                     CH1 +10000             
-*               ^                              ^               
+*        CH3 +10000                     CH1 +10000
+*               ^                              ^
 *               |                              |                   / -10000
 *    CH2        |                   CH0        |                  /
 *  -10000 <-----------> +10000    -10000 <-----------> +10000    H
 *               |                              |                  \
 *               |                              |                   \ -4545
-*               V                              V               
-*            -10000                         -10000             
+*               V                              V
+*            -10000                         -10000
 *
 ********** Frames **********
-*                                  
-*       N(orth)                    U(p)  
-*      /                           |
-*     /                            |    F(orward)             
-*    /______ E(ast)                |  /            
-*    |                             | /                      
-*    |                      ______ |/                       
-*    |D(own)               L(eft)         
+*
+*       N(orth)                    U(p)                  F(orward)
+*      /                           |                    /
+*     /                            |    F(orward)      /
+*    /______ E(ast)                |  /               /______ R(ight)
+*    |                             | /                |
+*    |                      ______ |/                 |
+*    |D(own)               L(eft)                     |D(own)
 *
 *
 ****************************************/
@@ -94,7 +94,7 @@ void interface_init(ros::NodeHandle& nh)
 void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t msg_flags)
 {
 	ros::Time now_time = ros::Time::now();
-	
+
 	// only use 100HZ imu bag (0x3f) to align
 	if (align_state == ALIGN_UNINITED && ((msg_flags & 0x3F)==0x3F) )
 	{
@@ -109,7 +109,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 		if (alignArray.size() < ALIGN_BUFFER_SIZE)
 		{
 			Align_data_t data = {
-				.time = now_time, 
+				.time = now_time,
 				.tick = recv_sdk_std_msgs.time_stamp
 			};
 			alignArray.push_back(data);
@@ -137,7 +137,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 			else
 			{
 				Align_data_t data = {
-					.time = now_time, 
+					.time = now_time,
 					.tick = recv_sdk_std_msgs.time_stamp
 				};
 				alignArray.push_back(data);
@@ -167,7 +167,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 		q.z() = recv_sdk_std_msgs.q.q3;
 
 		Matrix3d gRb = q.toRotationMatrix();
-		
+
 		Vector3d a_g;
 		a_g(0) = recv_sdk_std_msgs.a.x;
 		a_g(1) = recv_sdk_std_msgs.a.y;
@@ -204,7 +204,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 			velo_msg.vector.y = recv_sdk_std_msgs.v.y;
 			velo_msg.vector.z = recv_sdk_std_msgs.v.z;
 		}
-		
+
 		sensor_msgs::NavSatFix gps_msg;
 		{
 			gps_msg.header.stamp = tick_time;
@@ -285,12 +285,12 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 		{
 			pub_gimbal.publish(gmb_msg);
 		}
-		
+
 		if ((msg_flags & ENABLE_MSG_TIME))
 		{
 			pub_time_ref.publish(tmr_msg);
 		}
-		
+
 
 		// judge mode select channel to acquire control
 		if (recv_sdk_std_msgs.rc.mode > 5000)
@@ -300,7 +300,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 				ctrl_state = CTRL_ACQUIRING;
 				ctrl_acquire_start_time = ros::Time::now();
 				ctrl_acquire_acked = false;
-				
+
 				api_acquire_control();
 			}
 		}
@@ -313,20 +313,27 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 
 void interface_control_callback(const sensor_msgs::Joy& msg)
 {
-	last_ctrl_time = ros::Time::now();
-	ctrl_cmd.roll_or_x = msg.axes[0];
-	ctrl_cmd.pitch_or_y = msg.axes[1];
-	ctrl_cmd.thr_z = msg.axes[2];
-	ctrl_cmd.yaw = msg.axes[3];
-	if (msg.axes[4] > 0)
+	if (msg.header.frame_id.compare("FRD")==0)
 	{
-		ctrl_cmd.ctrl_flag = 0b00100010; // 0b00100000, mode 13
+		last_ctrl_time = ros::Time::now();
+		ctrl_cmd.roll_or_x = msg.axes[0];
+		ctrl_cmd.pitch_or_y = msg.axes[1];
+		ctrl_cmd.thr_z = msg.axes[2];
+		ctrl_cmd.yaw = msg.axes[3];
+		if (msg.axes[4] > 0)
+		{
+			ctrl_cmd.ctrl_flag = 0b00100010; // 0b00100000, mode 13
+		}
+		else
+		{
+			ctrl_cmd.ctrl_flag = 0b00000010; // 0b00000000, mode 1
+		}
+		ctrl_updated = true;
 	}
 	else
 	{
-		ctrl_cmd.ctrl_flag = 0b00000010; // 0b00000000, mode 1
+		ROS_ERROR("In N1Ctrl: input joy_msg.frame_id should be FRD!!!");
 	}
-	ctrl_updated = true;
 }
 
 void interface_control_timer(const ros::TimerEvent& e)
@@ -385,7 +392,7 @@ void stop_control()
 void ctrl_acquire_ack_success()
 {
 	ctrl_state = CTRL_ACQUIRED;
-	last_ctrl_time = ros::Time::now();		
+	last_ctrl_time = ros::Time::now();
 	ROS_INFO("Ncore acquire acked.");
 }
 

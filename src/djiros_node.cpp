@@ -133,13 +133,13 @@ int16_t sdk_std_msgs_handler(uint8_t cmd_id,uint8_t* pbuf,uint16_t len,req_id_t 
 	ros_process_sdk_std_msg(recv_sdk_std_msgs, *msg_enable_flag);
 
 	/* testing reciever frequence */
-	if( (*msg_enable_flag & ENABLE_MSG_DEVICE))
-	{
-		std_msgs::Float32 msg;
-		msg.data = (float)recv_sdk_std_msgs.ctrl_device;
-		test_fre_pub.publish(msg);
+	// if( (*msg_enable_flag & ENABLE_MSG_DEVICE))
+	// {
+	// 	std_msgs::Float32 msg;
+	// 	msg.data = (float)recv_sdk_std_msgs.ctrl_device;
+	// 	test_fre_pub.publish(msg);
 		
-	}
+	// }
 
 	return 0;
 }
@@ -941,10 +941,10 @@ int main (int argc, char** argv)
 	// activation_sub		= nh.subscribe("/sdk_request_activation", 10, ros_activation_callback);
 	/* start ros publisher */
     // battery_pub 			= nh.advertise<std_msgs::Float32>("/battery_status", 10);
-	nav_ctrl_status_pub 	= nh.advertise<std_msgs::Float32>("/nav_open_close_status", 10);
+	nav_ctrl_status_pub 	= nh.advertise<std_msgs::Float32>("nav_open_close_status", 10);
 	// flight_status_pub 		= nh.advertise<std_msgs::Float32>("/flight_status", 10);
-	activation_status_pub   = nh.advertise<std_msgs::Float32>("/activation_status", 10);
-	test_fre_pub			= nh.advertise<std_msgs::Float32>("/test_fre", 10);
+	activation_status_pub   = nh.advertise<std_msgs::Float32>("activation_status", 10);
+	// test_fre_pub			= nh.advertise<std_msgs::Float32>("/test_fre", 10);
 	/* ros timer 50Hz */
 	// simple_task_timer 	= nh.createTimer(ros::Duration(1.0/50.0), spin_callback);
 	
