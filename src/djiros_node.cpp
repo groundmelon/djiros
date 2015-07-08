@@ -4,14 +4,14 @@
  Author      : Ying Jiahang, Wu Yuwei
  Version     :
  Copyright   : Your copyright notice
- Description : 
+ Description :
  ============================================================================
  */
 /* ROS */
 #include <ros/ros.h>
 #include "std_msgs/Float32.h"
 #include "geometry_msgs/Quaternion.h"
-/* SDK */ 
+/* SDK */
 #include <stdio.h>
 #include <stdlib.h>
 #include "DJI_Pro_Codec.h"
@@ -64,6 +64,10 @@ int		app_version;
 std::string	app_bundle_id;
 
 std::string     enc_key;
+
+/* gravity param */
+double g_gravity;
+
 /* activation */
 static activation_data_t activation_msg = {14,2,1,""};
 bool activation_is_success;
@@ -73,7 +77,7 @@ bool activation_is_success;
 int16_t sdk_std_msgs_handler(uint8_t cmd_id,uint8_t* pbuf,uint16_t len,req_id_t req_id);
 int16_t	nav_force_close_handler(uint8_t cmd_id,uint8_t* pbuf,uint16_t len,req_id_t req_id);
 /* cmd id table */
-cmd_handler_table_t cmd_handler_tab[] = 
+cmd_handler_table_t cmd_handler_tab[] =
 {
 	{0x00,sdk_std_msgs_handler				},
 	{0x01,nav_force_close_handler			},
@@ -116,7 +120,7 @@ int16_t sdk_std_msgs_handler(uint8_t cmd_id,uint8_t* pbuf,uint16_t len,req_id_t 
 {
 	uint16_t *msg_enable_flag = (uint16_t *)pbuf;
 	uint16_t data_len = MSG_ENABLE_FLAG_LEN;
-	
+
 	_recv_std_msgs( *msg_enable_flag, ENABLE_MSG_TIME	, recv_sdk_std_msgs.time_stamp			, pbuf, data_len);
 	_recv_std_msgs( *msg_enable_flag, ENABLE_MSG_Q		, recv_sdk_std_msgs.q				, pbuf, data_len);
 	_recv_std_msgs( *msg_enable_flag, ENABLE_MSG_A		, recv_sdk_std_msgs.a				, pbuf, data_len);
@@ -138,14 +142,14 @@ int16_t sdk_std_msgs_handler(uint8_t cmd_id,uint8_t* pbuf,uint16_t len,req_id_t 
 	// 	std_msgs::Float32 msg;
 	// 	msg.data = (float)recv_sdk_std_msgs.ctrl_device;
 	// 	test_fre_pub.publish(msg);
-		
+
 	// }
 
 	return 0;
 }
 
 /*
-  * app_example 
+  * app_example
   */
 /* mode_test */
 /* test mode 2: vert velocity, hori angle, yaw angular rate */
@@ -434,9 +438,9 @@ void cmd_callback_test_fun(uint16_t *ack)
 	{
 		test_cmd_send_flag  = 0;
 		printf("[ERROR] APP LAYER NOT STATUS_CMD_EXE_SUCCESS !!!!!!!!!!!!!!!!!!\n");
-	}	
+	}
 
-} 
+}
 
 /* take off -> landing -> take off -> go home */
 void basic_test_cmd(bool &is_init)
@@ -451,7 +455,7 @@ void basic_test_cmd(bool &is_init)
 	else
 	{
 		if(test_cmd_send_flag)
-		{	
+		{
 			if(test_cmd_is_resend)
 			{
 				cnt--;
@@ -542,7 +546,7 @@ void test_all(bool &is_init)
 		static bool init_flag = false;
 		if(cnt < 1)
 		{
-			uint8_t send_data = 4; 
+			uint8_t send_data = 4;
 			App_Complex_Send_Cmd(send_data, cmd_callback_fun);
 			cnt ++;
 		}
@@ -569,7 +573,7 @@ void test_all(bool &is_init)
 		else if(cnt < 50*40*2+1)
 		{
 			init_flag = false;
-			uint8_t send_data = 1; 
+			uint8_t send_data = 1;
 			App_Complex_Send_Cmd(send_data, cmd_callback_fun);
 			cnt ++;
 		}
@@ -584,7 +588,7 @@ void test_all(bool &is_init)
 			cnt = 0;
 			simple_task_num = -1;
 		}
-				
+
 	}
 }
 
@@ -600,7 +604,7 @@ void test_activation_ack_cmd_callback(ProHeader *header)
 		#define DJI_APP_NO_INTERNET		0x0005
 		#define SERVER_REFUSED			0x0006
 		#define LEVEL_ERROR				0x0007
-	*/ 
+	*/
 	uint16_t ack_data;
 	printf("Sdk_ack_cmd0_callback,sequence_number=%d,session_id=%d,data_len=%d\n", header->sequence_number, header->session_id, header->length - EXC_DATA_SIZE);
 	memcpy((uint8_t *)&ack_data,(uint8_t *)&header->magic, (header->length - EXC_DATA_SIZE));
@@ -648,7 +652,7 @@ void test_version_query_ack_cmd_callback(ProHeader *header)
 	/* pay attention to memory holes */
 	memcpy((uint8_t *)&ack.version_crc,(uint8_t *)&header->magic+sizeof(uint16_t), (header->length - EXC_DATA_SIZE)-sizeof(uint16_t));
 	if(ack.version_ack == SDK_ERR_SUCCESS)
-	{	
+	{
 		printf("[ACTIVATION] Activation result:\n 	ack SDK_ACT_SUCCESS\n");
 	}
 	else
@@ -695,7 +699,7 @@ void cmd_callback_fun(uint16_t *ack)
 		printf("random_test Cmd result: %s \n", *(result+ack_data));
 	}
 	cmd_send_flag = 1;
-} 
+}
 
 void ros_cmd_data_callback(const std_msgs::Float32::ConstPtr& msg)
 {
@@ -752,7 +756,7 @@ void ros_nav_open_close_callback(const std_msgs::Float32::ConstPtr& msg)
 }
 
 void ros_ctrl_data_callback(const geometry_msgs::Quaternion::ConstPtr& msg)
-{	
+{
 	api_ctrl_without_sensor_data_t send_data = {0};
 	/*
 		send_data.send_yaw = (float)msg->z;
@@ -779,7 +783,7 @@ void ros_ctrl_data_callback(const geometry_msgs::Quaternion::ConstPtr& msg)
 		send_data.yaw 		= msg->z;
 	}
 	App_Send_Data(0, 0, MY_CTRL_CMD_SET, API_CTRL_REQUEST, (uint8_t*)&send_data, sizeof(send_data), NULL, 0, 0);
-} 
+}
 
 void ros_ctrl_mode_callback(const std_msgs::Float32::ConstPtr& msg)
 {
@@ -814,7 +818,7 @@ void spin_callback(const ros::TimerEvent& e)
 
 		msg.data = (float)recv_sdk_std_msgs.battery_remaining_capacity;
 		battery_pub.publish(msg);
-/*		
+/*
 		ROS_INFO("STD_MSGS:");
 		printf("[STD_MSGS] time_stamp %d \n",recv_sdk_std_msgs.time_stamp);
 		printf("[STD_MSGS] q %f %f %f %f \n",recv_sdk_std_msgs.q.q0,recv_sdk_std_msgs.q.q1,recv_sdk_std_msgs.q.q2,recv_sdk_std_msgs.q.q3);
@@ -861,10 +865,10 @@ void spin_callback(const ros::TimerEvent& e)
 		{
 			case 0:
 			basic_test_mode2(init_flag);
-			break;	
+			break;
 			case 1:
 			basic_test_mode4(init_flag);
-			break;	
+			break;
 			case 2:
 			basic_test_cmd(init_flag);
 			break;
@@ -915,14 +919,15 @@ int main (int argc, char** argv)
 	nh_private.param("app_version", app_version, 1);
 	nh_private.param("app_bundle_id", app_bundle_id, std::string("12345678901234567890123456789012"));
 	nh_private.param("enc_key", enc_key, std::string("9b7c15ee8dc3849976a779b37cdec9fe4c6308af5a03b3a570b8dc0e3c7337b8"));
+	nh_private.param("gravity", g_gravity, 9.80);
 
 	activation_msg.app_id 		= (uint32_t)app_id;
 	activation_msg.app_api_level 	= (uint32_t)app_api_level;
 	activation_msg.app_ver		= (uint32_t)app_version;
-	memcpy(activation_msg.app_bundle_id, app_bundle_id.c_str(), 32); 
-	
+	memcpy(activation_msg.app_bundle_id, app_bundle_id.c_str(), 32);
+
 	key = (char*)enc_key.c_str();
-	
+
 	printf("[INIT] SET serial_port	: %s \n", serial_name.c_str());
 	printf("[INIT] SET baud_rate	: %d \n", baud_rate);
 	printf("[INIT] ACTIVATION INFO	: \n");
@@ -947,10 +952,10 @@ int main (int argc, char** argv)
 	// test_fre_pub			= nh.advertise<std_msgs::Float32>("/test_fre", 10);
 	/* ros timer 50Hz */
 	// simple_task_timer 	= nh.createTimer(ros::Duration(1.0/50.0), spin_callback);
-	
+
 	simple_task_timer 	= nh.createTimer(ros::Duration(1.0/50.0), interface_control_timer);
 	ctrl_sub = nh_private.subscribe("ctrl", 10, interface_control_callback);
-	
+
 	signal(SIGINT, shutdownSignalHandler);
 	/* open serial port */
 	if (Pro_Hw_Setup((char *)serial_name.c_str(),baud_rate)==-1)
@@ -980,7 +985,7 @@ int main (int argc, char** argv)
 	/* ros spin for timer */
 	if (activation_is_success)
 	{
-		ros::spin();	
+		ros::spin();
 	}
 	else
 	{
