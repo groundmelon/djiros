@@ -47,6 +47,7 @@ using namespace Eigen;
 
 ros::Time base_time;
 ALIGN_STATE_t align_state;
+double g_gravity;
 
 ros::Publisher pub_imu;
 ros::Publisher pub_velo;
@@ -168,12 +169,22 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 
 		Matrix3d gRb = q.toRotationMatrix();
 
+#if 0
+		// accel in std_msg is acceleration related to ground
 		Vector3d a_g;
 		a_g(0) = recv_sdk_std_msgs.a.x;
 		a_g(1) = recv_sdk_std_msgs.a.y;
 		a_g(2) = recv_sdk_std_msgs.a.z;
-		Vector3d a_b = gRb.transpose() * a_g;
-
+		Vector3d a_b = /* gRb.transpose() */ a_g * 9.8;
+#else
+		// accel in std_msg is the raw acceleration output from IMU
+		Vector3d a_b;
+		a_b(0) = recv_sdk_std_msgs.a.x;
+		a_b(1) = recv_sdk_std_msgs.a.y;
+		a_b(2) = recv_sdk_std_msgs.a.z;
+		Vector3d a_b = a_b * g_gravity;
+#endif
+		
 		Vector3d v_g;
 		v_g(0) = recv_sdk_std_msgs.v.x;
 		v_g(1) = recv_sdk_std_msgs.v.y;
