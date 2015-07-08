@@ -47,7 +47,7 @@ using namespace Eigen;
 
 ros::Time base_time;
 ALIGN_STATE_t align_state;
-double g_gravity;
+extern double g_gravity;
 
 ros::Publisher pub_imu;
 ros::Publisher pub_velo;
@@ -182,7 +182,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 		a_b(0) = recv_sdk_std_msgs.a.x;
 		a_b(1) = recv_sdk_std_msgs.a.y;
 		a_b(2) = recv_sdk_std_msgs.a.z;
-		Vector3d a_b = a_b * g_gravity;
+		a_b = a_b * g_gravity;
 #endif
 
 		Vector3d v_g;
