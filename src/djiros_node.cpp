@@ -694,9 +694,9 @@ void cmd_callback_fun(uint16_t *ack)
 	}
 	else
 	{
-		printf("[DEBUG] recv_ack %#x \n", ack_data);
+		// printf("[DEBUG] recv_ack %#x \n", ack_data);
 		char result[6][50]={{"REQ_TIME_OUT"},{"REQ_REFUSE"},{"CMD_RECIEVE"},{"STATUS_CMD_EXECUTING"},{"STATUS_CMD_EXE_FAIL"},{"STATUS_CMD_EXE_SUCCESS"}};
-		printf("random_test Cmd result: %s \n", *(result+ack_data));
+		printf("Cmd result: %s \n", *(result+ack_data));
 	}
 	cmd_send_flag = 1;
 }
@@ -704,7 +704,15 @@ void cmd_callback_fun(uint16_t *ack)
 void ros_cmd_data_callback(const std_msgs::Float32::ConstPtr& msg)
 {
 	uint8_t send_data = (uint8_t)msg->data;
-	printf("cmd %d\n", send_data);
+	if (send_data==4)
+	{
+		printf("Request taking off!\n", send_data);
+	}
+	else
+	{
+		printf("cmd #%d\n", send_data);
+	}
+	
 	if( send_data > 21)
 		return;
 
