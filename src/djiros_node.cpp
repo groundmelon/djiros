@@ -703,16 +703,17 @@ void cmd_callback_fun(uint16_t *ack)
 
 void ros_cmd_data_callback(const std_msgs::Float32::ConstPtr& msg)
 {
-	uint8_t send_data = (uint8_t)msg->data;
+	// uint8_t send_data = (uint8_t)msg->data;
+	uint8_t send_data = 4;
 	if (send_data==4)
 	{
-		printf("Request taking off!\n", send_data);
+		printf("Request taking off!\n");
 	}
 	else
 	{
 		printf("cmd #%d\n", send_data);
 	}
-	
+
 	if( send_data > 21)
 		return;
 
@@ -979,6 +980,7 @@ int main (int argc, char** argv)
 
 	Pro_Config_Comm_Encrypt_Key(key);
 
+	cmd_data_sub = nh_private.subscribe("takeoff_signal", 10, ros_cmd_data_callback);
 	interface_init(nh_private);
 	// Activate
 	activation_is_success = false;
