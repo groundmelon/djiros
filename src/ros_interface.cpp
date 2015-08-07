@@ -42,6 +42,14 @@
 
 #define _TICK2ROSTIME(tick) (ros::Duration((double)tick / 600.0))
 
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
 using namespace std;
 using namespace Eigen;
 
@@ -317,6 +325,10 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 		}
 		else
 		{
+			if (ctrl_state != CTRL_STOP)
+			{
+				ctrl_release_ack_success();
+			}
 			ctrl_state = CTRL_STOP;
 		}
 	}
@@ -378,7 +390,7 @@ void interface_control_timer(const ros::TimerEvent& e)
 	}
 	else if (ctrl_state == CTRL_ACQUIRED)
 	{
-		ROS_ERROR("****** Acquire control success! ******");
+		ROS_ERROR(ANSI_COLOR_GREEN "****** Acquire control success! ******" ANSI_COLOR_RESET);
 		ctrl_state = CTRL_RUNNING;
 	}
 	else if (ctrl_state == CTRL_RUNNING)
