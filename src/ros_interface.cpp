@@ -421,5 +421,6 @@ void ctrl_acquire_ack_success()
 
 void ctrl_release_ack_success()
 {
+	ctrl_state = CTRL_STOP;
 	ROS_ERROR("------ Release control success! ------");
 }
