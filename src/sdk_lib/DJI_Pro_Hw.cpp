@@ -211,11 +211,6 @@ static int SerialRead(unsigned char *buf,int len)
 	}
 }
 
-
-FILE * fp;
-FILE * fps;
-FILE * fpr;
-
 static void * SerialRecvThread(void * arg)
 {
 	int ret;
@@ -243,12 +238,6 @@ static void * SerialRecvThread(void * arg)
 			{
 				sdk_serial_byte_handle(buf[i]);
 			}
-			fprintf(fp, "RECV[%d]<",ret);
-			fwrite(buf, ret, 1, fp);
-			fwrite(buf, ret, 1, fpr);
-			fprintf(fp, ">\n");
-			fflush(fp);
-			fflush(fpr);
 		}
 	}
 	return NULL;
@@ -270,12 +259,6 @@ int SerialStartThread(void)
 
 int Pro_Hw_Send(unsigned char *buf, int len)
 {
-	fprintf(fp, "SEND[%d]<",len);
-	fwrite(buf, len, 1, fp);
-	fwrite(buf, len, 1, fps);
-	fprintf(fp, ">\n");
-	fflush(fp);
-	fflush(fps);
 	return SerialWrite(buf,len);
 }
 
@@ -286,9 +269,6 @@ int Pro_Hw_Recv(unsigned char *buf, int len)
 
 int Pro_Hw_Setup(const char *device,int baudrate)
 {
-	assert(fp=fopen("/tmp/djiserial.txt","w"));
-	assert(fps=fopen("/tmp/djiserials.txt","w"));
-	assert(fpr=fopen("/tmp/djiserialr.txt","w"));
 	if(SerialStart(device,baudrate) < 0)
 	{
 		SerialClose();
