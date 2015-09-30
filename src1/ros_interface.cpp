@@ -40,8 +40,7 @@
 #include <sensor_msgs/NavSatFix.h>
 #include <geometry_msgs/Vector3Stamped.h>
 
-
-
+#include "SDK.h"
 
 
 #define _TICK2ROSTIME(tick) (ros::Duration((double)tick / 600.0))
@@ -59,8 +58,7 @@ using namespace Eigen;
 
 ros::Time base_time;
 ALIGN_STATE_t align_state;
-double g_gravity;
-bool activation_is_successfull;
+extern double g_gravity;
 
 ros::Publisher pub_imu;
 ros::Publisher pub_velo;
@@ -73,7 +71,7 @@ ros::Publisher pub_time_ref;
 list<Align_data_t> alignArray;
 Matrix3d ros_R_fc;
 
-attitude_data_t user_ctrl_data;
+api_ctrl_without_sensor_data_t ctrl_cmd;
 ros::Time last_ctrl_time;
 bool ctrl_updated;
 CTRL_STATE_t ctrl_state;
@@ -262,7 +260,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 
 			rc_msg.buttons.push_back(recv_sdk_std_msgs.status);
 			rc_msg.buttons.push_back(recv_sdk_std_msgs.battery_remaining_capacity);
-			rc_msg.buttons.push_back(recv_sdk_std_msgs.ctrl_info.cur_ctrl_dev_in_navi_mode);
+			rc_msg.buttons.push_back(recv_sdk_std_msgs.ctrl_device);
 		}
 
 		geometry_msgs::Vector3Stamped gmb_msg;
@@ -343,23 +341,18 @@ void interface_control_callback(const sensor_msgs::Joy& msg)
 {
 	if (msg.header.frame_id.compare("FRD")==0)
 	{
-
-
-
-		
 		last_ctrl_time = ros::Time::now();
-		// user_ctrl_data.ctrl_flag = request.flag;
-		user_ctrl_data.roll_or_x = msg.axes[0];
-		user_ctrl_data.pitch_or_y = msg.axes[1];
-		user_ctrl_data.thr_z = msg.axes[2];
-		user_ctrl_data.yaw = msg.axes[3];
+		ctrl_cmd.roll_or_x = msg.axes[0];
+		ctrl_cmd.pitch_or_y = msg.axes[1];
+		ctrl_cmd.thr_z = msg.axes[2];
+		ctrl_cmd.yaw = msg.axes[3];
 		if (msg.axes[4] > 0)
 		{
-			user_ctrl_data.ctrl_flag = 0b00100010; // 0b00100000, mode 13
+			ctrl_cmd.ctrl_flag = 0b00100010; // 0b00100000, mode 13
 		}
 		else
 		{
-			user_ctrl_data.ctrl_flag = 0b00000010; // 0b00000000, mode 1
+			ctrl_cmd.ctrl_flag = 0b00000010; // 0b00000000, mode 1
 		}
 		ctrl_updated = true;
 	}
@@ -407,7 +400,7 @@ void interface_control_timer(const ros::TimerEvent& e)
 	{
 		if (ctrl_updated)
 		{
-			DJI_Pro_Attitude_Control(&user_ctrl_data);
+			App_Send_Data(0, 0, MY_CTRL_CMD_SET, API_CTRL_REQUEST, (uint8_t*)&ctrl_cmd, sizeof(ctrl_cmd), NULL, 0, 0);
 		}
 	}
 	else
@@ -445,9 +438,4 @@ void api_release_control()
 {
 	printf("Try to release control");
 	DJI_Pro_Control_Management(0,NULL);
-}
-
-void activate_success()
-{
-	activation_is_successfull = true;
 }

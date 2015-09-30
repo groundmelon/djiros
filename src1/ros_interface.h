@@ -2,7 +2,7 @@
 #define __ROS_INTERFACE_H
 
 #include <ros/ros.h>
-#include "SDK.h"
+
 #include <sensor_msgs/Joy.h>
 
 #define TIME_DIFF_CHECK 0.010
@@ -25,7 +25,5 @@ void interface_control_timer(const ros::TimerEvent& e);
 void stop_control();
 void ctrl_acquire_ack_success();
 void ctrl_release_ack_success();
-void api_acquire_control();
-void api_release_control();
 
 #endif
