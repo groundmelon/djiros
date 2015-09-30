@@ -4,12 +4,13 @@
 #include <thread>
 #include "djiMain.h"
 #include "ros_interface.h"
-#include <sigint.h>
+#include <signal.h>
 
 using namespace dji_variable;
 
-double g_gravity;
-extern bool activation_is_success;
+// defined in ros_interface.cpp
+extern double g_gravity;
+extern bool activation_is_successfull;
 
 int DJI_Setup(std::string serial_port, int baudrate) {
 	int ret;
@@ -188,6 +189,15 @@ int DJI_Setup(std::string serial_port, int baudrate) {
 // 	}
 // }
 
+void shutdownSignalHandler(int sig)
+{
+	api_release_control();
+	usleep(500*1000);
+	ROS_ERROR("Exit...");
+	ros::shutdown();
+}
+
+
 int main(int argc,char **argv) {
 
 	char temp_buf[65];
@@ -216,7 +226,7 @@ int main(int argc,char **argv) {
 	strncpy((char*)user_act_data.app_bundle_id, app_bundle_id.c_str(),32);
 
 	user_act_data.app_key = temp_buf;
-	strncpy(user_act_data.app_key, enc_key.c_str(), 64);
+	strcpy(user_act_data.app_key, enc_key.c_str());
 
 
 	printf("=================================================\n");
@@ -228,6 +238,7 @@ int main(int argc,char **argv) {
 
 	ros::Timer simple_task_timer = nh.createTimer(ros::Duration(1.0 / 50.0),  interface_control_timer);
 	
+	signal(SIGINT, shutdownSignalHandler);
 	if (DJI_Setup(serial_name.c_str(),baud_rate) < 0) {
 		printf("Serial Port Cannot Open\n");
 		return 0;
@@ -235,11 +246,12 @@ int main(int argc,char **argv) {
 	interface_init(nh_private);
 
 	DJI_Pro_Activate_API(&user_act_data,NULL);
+	ros::Time active_time = ros::Time::now();
 
 	ros::Rate r(10);
 	while (ros::ok())
 	{
-		if ((ros::Time::now() - start_time) > ros::Duration(3.0))
+		if ((ros::Time::now() - active_time) > ros::Duration(3.0))
 		{
 			ROS_ERROR("[ERROR] Activation failed.");
 			return -2;

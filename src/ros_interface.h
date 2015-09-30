@@ -19,6 +19,7 @@ struct Align_data_t
 };
 
 void interface_init(ros::NodeHandle& nh);
+void interface_flush_time();
 void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs, uint16_t msg_flags);
 void interface_control_callback(const sensor_msgs::Joy& msg);
 void interface_control_timer(const ros::TimerEvent& e);

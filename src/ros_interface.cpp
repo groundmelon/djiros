@@ -42,8 +42,6 @@
 
 
 
-
-
 #define _TICK2ROSTIME(tick) (ros::Duration((double)tick / 600.0))
 
 #define ANSI_COLOR_RED     "\x1b[31m"
@@ -90,7 +88,7 @@ void interface_init(ros::NodeHandle& nh)
 {
 	ctrl_updated = false;
 	ctrl_state = CTRL_STOP;
-	last_ctrl_time = ros::Time::now();
+	last_ctrl_time = ros::Time(0);
 	align_state = ALIGN_UNINITED;
 	alignArray.clear();
 
@@ -103,6 +101,11 @@ void interface_init(ros::NodeHandle& nh)
 	pub_rc = nh.advertise<sensor_msgs::Joy>("rc", 10);
 	pub_gimbal = nh.advertise<geometry_msgs::Vector3Stamped>("gimbal", 10);
 	pub_time_ref = nh.advertise<sensor_msgs::TimeReference>("tick", 10);
+}
+
+void interface_flush_time()
+{
+	last_ctrl_time = ros::Time::now();
 }
 
 void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t msg_flags)
@@ -332,7 +335,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 		{
 			if (ctrl_state != CTRL_STOP)
 			{
-				ctrl_release_ack_success();
+				ROS_ERROR("Manually exit API mode.");
 			}
 			ctrl_state = CTRL_STOP;
 		}
@@ -343,10 +346,6 @@ void interface_control_callback(const sensor_msgs::Joy& msg)
 {
 	if (msg.header.frame_id.compare("FRD")==0)
 	{
-
-
-
-		
 		last_ctrl_time = ros::Time::now();
 		// user_ctrl_data.ctrl_flag = request.flag;
 		user_ctrl_data.roll_or_x = msg.axes[0];
@@ -377,18 +376,12 @@ void interface_control_timer(const ros::TimerEvent& e)
 	}
 	else
 	{
-		if ((ros::Time::now() - last_ctrl_time).toSec() > 0.200)
-		{
-			ROS_ERROR("[ERR] Controll signal lost!!");
-			ctrl_state = CTRL_SIGNAL_LOST;
-			api_release_control();
-			return;
-		}
+		// pass
 	}
 
 	if (ctrl_state == CTRL_ACQUIRING)
 	{
-		if ((ros::Time::now()-ctrl_acquire_start_time).toSec() > 1.0)
+		if ((ros::Time::now()-ctrl_acquire_start_time).toSec() > 2.0)
 		{
 			ctrl_state = CTRL_STOP;
 			ROS_ERROR("[ERR] Acquire control failed.");
@@ -405,6 +398,14 @@ void interface_control_timer(const ros::TimerEvent& e)
 	}
 	else if (ctrl_state == CTRL_RUNNING)
 	{
+		if ((ros::Time::now() - last_ctrl_time).toSec() > 0.1)
+		{
+			ROS_ERROR("[ERR] Control signal lost for [%.0f] ms!!", (ros::Time::now() - last_ctrl_time).toSec()*1000);
+			ctrl_state = CTRL_SIGNAL_LOST;
+			api_release_control();
+			return;
+		}
+
 		if (ctrl_updated)
 		{
 			DJI_Pro_Attitude_Control(&user_ctrl_data);
@@ -425,25 +426,27 @@ void stop_control()
 void ctrl_acquire_ack_success()
 {
 	ctrl_state = CTRL_ACQUIRED;
-	last_ctrl_time = ros::Time::now();
-	ROS_INFO("Ncore acquire acked.");
+	// last_ctrl_time = ros::Time::now();
 }
 
 void ctrl_release_ack_success()
 {
-	ctrl_state = CTRL_STOP;
+	if (ctrl_state != CTRL_SIGNAL_LOST)
+	{
+		ctrl_state = CTRL_STOP;
+	}
 	ROS_ERROR("------ Release control success! ------");
 }
 
 void api_acquire_control()
 {
-	printf("Try to acquire control");
+	printf("Try to acquire control\n");
 	DJI_Pro_Control_Management(1,NULL);
 }
 
 void api_release_control()
 {
-	printf("Try to release control");
+	printf("Try to release control\n");
 	DJI_Pro_Control_Management(0,NULL);
 }
 
