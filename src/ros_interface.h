@@ -28,5 +28,7 @@ void ctrl_acquire_ack_success();
 void ctrl_release_ack_success();
 void api_acquire_control();
 void api_release_control();
+bool activate_is_successful();
+void activate_ack_handle(unsigned short ack);
 
 #endif

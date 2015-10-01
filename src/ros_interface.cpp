@@ -58,7 +58,7 @@ using namespace Eigen;
 ros::Time base_time;
 ALIGN_STATE_t align_state;
 double g_gravity;
-bool activation_is_successfull;
+bool activation_status;
 
 ros::Publisher pub_imu;
 ros::Publisher pub_velo;
@@ -117,7 +117,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 	{
 		base_time = now_time - _TICK2ROSTIME(recv_sdk_std_msgs.time_stamp);
 		align_state = ALIGN_RUNNING;
-		ROS_ERROR("[info] start imu align");
+		ROS_ERROR("[djiros] start imu align");
 		return;
 	}
 
@@ -148,7 +148,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 
 			if (all_sample_pass_test)
 			{
-				ROS_ERROR("***** IMU ALIGNED *****");
+				ROS_ERROR("[djiros] ***** IMU ALIGNED *****");
 				align_state = ALIGN_FINISHED;
 			}
 			else
@@ -174,7 +174,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 // 	);
 		if (std::fabs(dt) > TIME_DIFF_ALERT)
 		{
-			ROS_WARN("[WARN] SysTime - TickTime = %.0f ms", dt*1000);
+			ROS_WARN("[djiros] SysTime - TickTime = %.0f ms", dt*1000);
 		}
 
 		Quaterniond q;
@@ -335,7 +335,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 		{
 			if (ctrl_state != CTRL_STOP)
 			{
-				ROS_ERROR("Manually exit API mode.");
+				ROS_ERROR("[djiros] Manually exit API mode.");
 			}
 			ctrl_state = CTRL_STOP;
 		}
@@ -364,7 +364,7 @@ void interface_control_callback(const sensor_msgs::Joy& msg)
 	}
 	else
 	{
-		ROS_ERROR("In djiros: input joy_msg.frame_id should be FRD!!!");
+		ROS_ERROR("[djiros] input joy_msg.frame_id should be FRD!!!");
 	}
 }
 
@@ -384,7 +384,7 @@ void interface_control_timer(const ros::TimerEvent& e)
 		if ((ros::Time::now()-ctrl_acquire_start_time).toSec() > 2.0)
 		{
 			ctrl_state = CTRL_STOP;
-			ROS_ERROR("[ERR] Acquire control failed.");
+			ROS_ERROR("[djiros] [ERR] Acquire control failed.");
 		}
 		else
 		{
@@ -393,14 +393,14 @@ void interface_control_timer(const ros::TimerEvent& e)
 	}
 	else if (ctrl_state == CTRL_ACQUIRED)
 	{
-		ROS_ERROR(ANSI_COLOR_GREEN "****** Acquire control success! ******" ANSI_COLOR_RESET);
+		ROS_ERROR(ANSI_COLOR_GREEN "[djiros] ****** Acquire control success! ******" ANSI_COLOR_RESET);
 		ctrl_state = CTRL_RUNNING;
 	}
 	else if (ctrl_state == CTRL_RUNNING)
 	{
 		if ((ros::Time::now() - last_ctrl_time).toSec() > 0.1)
 		{
-			ROS_ERROR("[ERR] Control signal lost for [%.0f] ms!!", (ros::Time::now() - last_ctrl_time).toSec()*1000);
+			ROS_ERROR("[djiros] [ERR] Control signal lost for [%.0f] ms!!", (ros::Time::now() - last_ctrl_time).toSec()*1000);
 			ctrl_state = CTRL_SIGNAL_LOST;
 			api_release_control();
 			return;
@@ -435,22 +435,60 @@ void ctrl_release_ack_success()
 	{
 		ctrl_state = CTRL_STOP;
 	}
-	ROS_ERROR("------ Release control success! ------");
+	ROS_ERROR("[djiros] ------ Release control success! ------");
+}
+
+void ctrl_ack_handle(unsigned short ack)
+{
+	if (ack==0x0001)
+	{
+		ctrl_release_ack_success();
+	}
+	else if (ack==0x0002)
+	{
+		ctrl_acquire_ack_success();
+	}
+	else if (ack==0x0003)
+	{
+		ROS_WARN("[djiros] Acquiring control");
+	}
+	else
+	{
+		ROS_ERROR("[djiros] Unknown error when acquire control.");
+	}
 }
 
 void api_acquire_control()
 {
-	printf("Try to acquire control\n");
-	DJI_Pro_Control_Management(1,NULL);
+	printf("[djiros] Try to acquire control\n");
+	DJI_Pro_Control_Management(1,ctrl_ack_handle);
 }
 
 void api_release_control()
 {
-	printf("Try to release control\n");
-	DJI_Pro_Control_Management(0,NULL);
+	printf("[djiros] Try to release control\n");
+	DJI_Pro_Control_Management(0,ctrl_ack_handle);
 }
 
 void activate_success()
 {
-	activation_is_successfull = true;
+	activation_status = true;
 }
+
+bool activate_is_successful()
+{
+	return activation_status;
+}
+
+void activate_ack_handle(unsigned short ack)
+{
+	if (ack == SDK_ACTIVATE_SUCCESS)
+	{
+		activate_success();
+	}
+	else
+	{
+		ROS_ERROR("[djiros] Active Failed. ACK=0x%x", ack);
+	}
+}
+

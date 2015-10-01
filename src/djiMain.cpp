@@ -10,7 +10,6 @@ using namespace dji_variable;
 
 // defined in ros_interface.cpp
 extern double g_gravity;
-extern bool activation_is_successfull;
 
 int DJI_Setup(std::string serial_port, int baudrate) {
 	int ret;
@@ -245,18 +244,18 @@ int main(int argc,char **argv) {
 	}	
 	interface_init(nh_private);
 
-	DJI_Pro_Activate_API(&user_act_data,NULL);
-	ros::Time active_time = ros::Time::now();
+	DJI_Pro_Activate_API(&user_act_data, activate_ack_handle);
+	ros::Time activate_time = ros::Time::now();
 
 	ros::Rate r(10);
 	while (ros::ok())
 	{
-		if ((ros::Time::now() - active_time) > ros::Duration(3.0))
+		if ((ros::Time::now() - activate_time) > ros::Duration(3.0))
 		{
 			ROS_ERROR("[ERROR] Activation failed.");
 			return -2;
 		}
-		if (activation_is_successfull)
+		if (activate_is_successful())
 		{
 			break;
 		}

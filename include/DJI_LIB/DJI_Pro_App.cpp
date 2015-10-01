@@ -15,9 +15,6 @@
 
 // ----- implemented in ros_interface.cpp --------
 void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs, uint16_t msg_flags);
-void activate_success();
-void ctrl_release_ack_success();
-void ctrl_acquire_ack_success();
 //--------------------------------------------------
 
 static unsigned char Pro_Encode_Data[1024];
@@ -325,7 +322,6 @@ static void DJI_Pro_Activate_API_CallBack(ProHeader *header)
             if(ack_data == SDK_ACTIVATE_SUCCESS)
             {
                 printf("Activation Successfully\n");
-                activate_success();
                 if(from_user_account_data.app_key)
                     Pro_Config_Comm_Encrypt_Key(from_user_account_data.app_key);
             }
@@ -487,11 +483,9 @@ static void DJI_Pro_Control_Management_CallBack(ProHeader *header)
     {
     case 0x0001:
         printf("%s,line %d, release control successfully\n",__func__,__LINE__);
-        ctrl_release_ack_success();
         break;
     case 0x0002:
         printf("%s,line %d, obtain control successfully\n",__func__,__LINE__);
-        ctrl_acquire_ack_success();
         break;
     case 0x0003:
         printf("%s,line %d, obtain control failed\n",__func__,__LINE__);
