@@ -395,6 +395,7 @@ void interface_control_timer(const ros::TimerEvent& e)
 	{
 		ROS_ERROR(ANSI_COLOR_GREEN "[djiros] ****** Acquire control success! ******" ANSI_COLOR_RESET);
 		ctrl_state = CTRL_RUNNING;
+		last_ctrl_time = ros::Time::now();
 	}
 	else if (ctrl_state == CTRL_RUNNING)
 	{
@@ -409,6 +410,7 @@ void interface_control_timer(const ros::TimerEvent& e)
 		if (ctrl_updated)
 		{
 			DJI_Pro_Attitude_Control(&user_ctrl_data);
+			last_ctrl_time = ros::Time::now();
 		}
 	}
 	else
@@ -426,7 +428,6 @@ void stop_control()
 void ctrl_acquire_ack_success()
 {
 	ctrl_state = CTRL_ACQUIRED;
-	// last_ctrl_time = ros::Time::now();
 }
 
 void ctrl_release_ack_success()

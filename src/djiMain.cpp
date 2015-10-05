@@ -235,8 +235,9 @@ int main(int argc,char **argv) {
 	printf("app key: %s\n",user_act_data.app_key);
 	printf("=================================================\n");
 
-	ros::Timer simple_task_timer = nh.createTimer(ros::Duration(1.0 / 50.0),  interface_control_timer);
-	
+	ros::Timer simple_task_timer = nh_private.createTimer(ros::Duration(1.0 / 50.0),  interface_control_timer);
+	ros::Subscriber ctrl_sub = nh_private.subscribe("ctrl", 10, interface_control_callback);
+
 	signal(SIGINT, shutdownSignalHandler);
 	if (DJI_Setup(serial_name.c_str(),baud_rate) < 0) {
 		printf("Serial Port Cannot Open\n");
@@ -257,6 +258,7 @@ int main(int argc,char **argv) {
 		}
 		if (activate_is_successful())
 		{
+			ROS_WARN("Activate success!");
 			break;
 		}
 	}

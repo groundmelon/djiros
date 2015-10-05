@@ -1,6 +1,6 @@
 <launch>
 	<node pkg="djiros" type="djiros_node" name="djiros" output="screen">
-		<env name="ROSCONSOLE_FORMAT" value="${message}"/>
+		<env name="ROSCONSOLE_FORMAT" value="[${time}] ${message}"/>
 		<!-- node parameters -->
 		<param name="serial_name" type="string" value="/dev/ttyUSBNcore"/>
 		<param name="baud_rate" type="int" value="230400"/>
