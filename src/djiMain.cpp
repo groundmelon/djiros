@@ -205,7 +205,7 @@ int main(int argc,char **argv) {
 	ros::NodeHandle nh;
 	ros::NodeHandle nh_private("~");
 	
-	publishers::init_publishers(nh);
+	//publishers::init_publishers(nh);
 	service_handler::init_services(nh);
 
 	nh_private.param("serial_name", serial_name, std::string("/dev/ttyTHS1"));
