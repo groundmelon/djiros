@@ -180,7 +180,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 			ROS_WARN_THROTTLE(1.0, "[djiros] SysTime - TickTime = %.0f ms [%d]", dt*1000, cnt);
 			if (sdk_sync.finished && cnt < 100)
 			{
-				sdk_sync = SDKSyncronizer(base_time, dt);
+				// sdk_sync = SDKSyncronizer(base_time, dt);
 			}
 		}
 
