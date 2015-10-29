@@ -7,6 +7,8 @@
 
 #define TIME_DIFF_CHECK 0.010
 #define TIME_DIFF_ALERT 0.020
+#define TIME_DIFF_STOP_SYNC 0.002
+#define SYNC_STEP 0.001
 #define ALIGN_BUFFER_SIZE 100
 
 enum ALIGN_STATE_t {ALIGN_UNINITED=0, ALIGN_RUNNING=1, ALIGN_FINISHED=3};
@@ -30,5 +32,64 @@ void api_acquire_control();
 void api_release_control();
 bool activate_is_successful();
 void activate_ack_handle(unsigned short ack);
+
+class SDKSyncronizer
+{
+public:
+	int count;
+	ros::Time src_time;
+	ros::Time des_time;
+	ros::Duration step_dt;
+	bool finished;
+
+	SDKSyncronizer()
+	{
+		count = 0;
+		src_time = ros::Time(0);
+		finished = true;
+	};
+
+	SDKSyncronizer(ros::Time& _tm, double dt)
+	{
+		count = 0;
+		src_time = _tm;
+		step_dt = ros::Duration(SYNC_STEP * dt / std::fabs(dt));
+		finished = false;
+		ROS_WARN("[djiros]<sync> start base[%.3f] dt=%.3f", src_time.toSec(), dt);
+	};
+
+	ros::Time update(const ros::Time& base_time, const double dt)
+	{
+		assert(!finished);
+
+		if (std::fabs(dt) < TIME_DIFF_STOP_SYNC)
+		{
+			stop();
+			return base_time;
+		}
+		else
+		{
+			des_time = base_time + step_dt;
+			count++;
+			// ROS_INFO("[djiros]<sync> base[%.3f]->[%.3f] dt=%.3f steps=%d",
+			// 	src_time.toSec(), 
+			// 	des_time.toSec(), 
+			// 	dt,
+			// 	count);
+			return des_time;
+		}
+	};
+	
+	void stop()
+	{
+		ROS_INFO("[djiros]<sync> end base[%.3f]--[%.3f]->[%.3f] steps=%d",
+			src_time.toSec(), 
+			(des_time-src_time).toSec(),
+			des_time.toSec(), 
+			count
+		);
+		finished = true;
+	};
+};
 
 #endif

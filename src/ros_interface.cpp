@@ -42,7 +42,7 @@
 
 
 
-#define _TICK2ROSTIME(tick) (ros::Duration((double)tick / 600.0))
+#define _TICK2ROSTIME(tick) (ros::Duration((double)(tick) / 600.0))
 
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
@@ -78,6 +78,7 @@ CTRL_STATE_t ctrl_state;
 ros::Time ctrl_acquire_start_time;
 bool ctrl_acquire_acked;
 
+SDKSyncronizer sdk_sync;
 // ---------------------------------
 // implementation is in dji_sdk_node
 void api_acquire_control();
@@ -174,7 +175,18 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 // 	);
 		if (std::fabs(dt) > TIME_DIFF_ALERT)
 		{
-			ROS_WARN("[djiros] SysTime - TickTime = %.0f ms", dt*1000);
+			static int cnt = 0;
+			++cnt;
+			// ROS_WARN_THROTTLE(1.0, "[djiros] SysTime - TickTime = %.0f ms [%d]", dt*1000, cnt);
+			if (sdk_sync.finished)
+			{
+				sdk_sync = SDKSyncronizer(base_time, dt);
+			}
+		}
+
+		if (!sdk_sync.finished)
+		{
+			base_time = sdk_sync.update(base_time, dt);
 		}
 
 		Quaterniond q;
