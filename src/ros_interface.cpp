@@ -366,7 +366,8 @@ void interface_control_callback(const sensor_msgs::Joy& msg)
 		user_ctrl_data.yaw = msg.axes[3];
 		if (msg.axes[4] > 0)
 		{
-			user_ctrl_data.ctrl_flag = 0b00100010; // 0b00100000, mode 13
+			// user_ctrl_data.ctrl_flag = 0b00100010; // 0b00100000, mode 13
+			user_ctrl_data.ctrl_flag = 0b00101010; // 0b00100000, mode 14
 		}
 		else
 		{
