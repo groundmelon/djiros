@@ -124,6 +124,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 
 	if (align_state == ALIGN_RUNNING && ((msg_flags & 0x3F)==0x3F) )
 	{
+		ROS_INFO_THROTTLE(1.0, "[djiros] IMU aliging...");
 		if (alignArray.size() < ALIGN_BUFFER_SIZE)
 		{
 			Align_data_t data = {
@@ -265,6 +266,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 		}
 
 		sensor_msgs::Joy rc_msg;
+		bool rc_is_off = false;
 		{
 			rc_msg.header.stamp = tick_time;
 			rc_msg.header.frame_id = std::string("rc");
@@ -278,6 +280,9 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 			rc_msg.buttons.push_back(recv_sdk_std_msgs.status);
 			rc_msg.buttons.push_back(recv_sdk_std_msgs.battery_remaining_capacity);
 			rc_msg.buttons.push_back(recv_sdk_std_msgs.ctrl_info.cur_ctrl_dev_in_navi_mode);
+		
+			if (recv_sdk_std_msgs.rc.gear==0.0)
+				rc_is_off = true;
 		}
 
 		geometry_msgs::Vector3Stamped gmb_msg;
@@ -315,7 +320,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 			pub_mag.publish(mag_msg);
 		}
 
-		if ((msg_flags & ENABLE_MSG_RC))
+		if ((msg_flags & ENABLE_MSG_RC) && !rc_is_off)
 		{
 			pub_rc.publish(rc_msg);
 		}
@@ -374,6 +379,17 @@ void interface_control_callback(const sensor_msgs::Joy& msg)
 			user_ctrl_data.ctrl_flag = 0b00000010; // 0b00000000, mode 1
 		}
 		ctrl_updated = true;
+
+		if(msg.buttons.size())
+		{
+			ros::Time feedback_stamp;
+			feedback_stamp.sec = msg.buttons[1]*msg.buttons[0] + msg.buttons[2];
+			feedback_stamp.nsec = msg.buttons[3]*msg.buttons[0] + msg.buttons[4];
+// ROS_INFO("curr: %.3f fbk: %.3f dt=%.3f", 
+// 	last_ctrl_time.toSec(), 
+// 	feedback_stamp.toSec(),
+// 	(last_ctrl_time-feedback_stamp).toSec());
+		}
 	}
 	else
 	{
@@ -423,7 +439,7 @@ void interface_control_timer(const ros::TimerEvent& e)
 		if (ctrl_updated)
 		{
 			DJI_Pro_Attitude_Control(&user_ctrl_data);
-			last_ctrl_time = ros::Time::now();
+			// last_ctrl_time = ros::Time::now();
 		}
 	}
 	else
