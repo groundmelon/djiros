@@ -46,26 +46,26 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
    FILES
-  acc.msg
-  attitude_quad.msg
-  compass.msg
-  ctrl_info.msg
-  gimbal.msg
-  global_position.msg
-  local_position.msg
-  velocity.msg
-  rc_channels.msg
+  # acc.msg
+  # attitude_quad.msg
+  # compass.msg
+  # ctrl_info.msg
+  # gimbal.msg
+  # global_position.msg
+  # local_position.msg
+  # velocity.msg
+  # rc_channels.msg
 )
 
 ## Generate services in the 'srv' folder
 add_service_files(
    FILES
-  control_manager.srv
-  action.srv
-  attitude.srv
-  camera_action.srv
-  gimbal_angle.srv
-  gimbal_speed.srv
+  # control_manager.srv
+  # action.srv
+  # attitude.srv
+  # camera_action.srv
+  # gimbal_angle.srv
+  # gimbal_speed.srv
 )
 
 ## Generate actions in the 'action' folder

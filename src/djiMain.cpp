@@ -206,7 +206,7 @@ int main(int argc,char **argv) {
 	ros::NodeHandle nh_private("~");
 	
 	//publishers::init_publishers(nh);
-	service_handler::init_services(nh);
+	// service_handler::init_services(nh);
 
 	nh_private.param("serial_name", serial_name, std::string("/dev/ttyTHS1"));
 	nh_private.param("baud_rate", baud_rate, 230400);
