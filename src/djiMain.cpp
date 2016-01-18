@@ -237,6 +237,7 @@ int main(int argc,char **argv) {
 
 	ros::Timer simple_task_timer = nh_private.createTimer(ros::Duration(1.0 / 50.0),  interface_control_timer);
 	ros::Subscriber ctrl_sub = nh_private.subscribe("ctrl", 10, interface_control_callback, ros::TransportHints().tcpNoDelay());
+	ros::Subscriber gimbal_ctrl_sub = nh_private.subscribe("gimbal_ctrl", 10, interface_gimbal_control_callback, ros::TransportHints().tcpNoDelay());
 
 	signal(SIGINT, shutdownSignalHandler);
 	if (DJI_Setup(serial_name.c_str(),baud_rate) < 0) {

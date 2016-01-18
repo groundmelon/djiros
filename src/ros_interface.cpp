@@ -287,7 +287,7 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 
 		geometry_msgs::Vector3Stamped gmb_msg;
 		{
-			gmb_msg.header.stamp = tick_time;
+			gmb_msg.header.stamp = (msg_flags & ENABLE_MSG_TIME) ? tick_time : ros::Time(0.0);
 			gmb_msg.header.frame_id = std::string("gimbal");
 			gmb_msg.vector.x = recv_sdk_std_msgs.gimbal.x;
 			gmb_msg.vector.y = recv_sdk_std_msgs.gimbal.y;
@@ -522,3 +522,18 @@ void activate_ack_handle(unsigned short ack)
 	}
 }
 
+void interface_gimbal_control_callback(const geometry_msgs::PoseStampedConstPtr& pMsg)
+{
+	const double angle_unit_convert_base = 0.1 / 180.0 * M_PI; // 0.1 degrees in rads
+	gimbal_custom_control_angle_t gimbal_angle = {0};
+	gimbal_angle.yaw_angle = static_cast<signed short>(pMsg->pose.orientation.z / angle_unit_convert_base);
+    gimbal_angle.roll_angle = static_cast<signed short>(pMsg->pose.orientation.x / angle_unit_convert_base);
+    gimbal_angle.pitch_angle = static_cast<signed short>(pMsg->pose.orientation.y / angle_unit_convert_base);
+    gimbal_angle.duration = pMsg->pose.orientation.w;
+    gimbal_angle.ctrl_byte.base = 1;
+    gimbal_angle.ctrl_byte.yaw_cmd_ignore = pMsg->pose.position.z < 0.0;
+    gimbal_angle.ctrl_byte.roll_cmd_ignore = pMsg->pose.position.x < 0.0;
+    gimbal_angle.ctrl_byte.pitch_cmd_ignore = pMsg->pose.position.y < 0.0;
+
+    DJI_Pro_Gimbal_Angle_Control(&gimbal_angle);
+}
