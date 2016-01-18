@@ -287,7 +287,8 @@ void ros_process_sdk_std_msg(const sdk_std_msg_t& recv_sdk_std_msgs,  uint16_t m
 
 		geometry_msgs::Vector3Stamped gmb_msg;
 		{
-			gmb_msg.header.stamp = (msg_flags & ENABLE_MSG_TIME) ? tick_time : ros::Time(0.0);
+			// gmb_msg.header.stamp = (msg_flags & ENABLE_MSG_TIME) ? tick_time : ros::Time(0.0);
+			gmb_msg.header.stamp = tick_time;
 			gmb_msg.header.frame_id = std::string("gimbal");
 			gmb_msg.vector.x = recv_sdk_std_msgs.gimbal.x;
 			gmb_msg.vector.y = recv_sdk_std_msgs.gimbal.y;
