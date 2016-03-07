@@ -14,7 +14,7 @@ else()
         message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
-set(ADDITIONAL_CXX_FLAG "-Wall -O3")
+set(ADDITIONAL_CXX_FLAG "-Wall -O3 -g")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ADDITIONAL_CXX_FLAG}")
 
 ## Find catkin macros and libraries
@@ -44,29 +44,14 @@ find_package(catkin REQUIRED COMPONENTS
 
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-   FILES
-  # acc.msg
-  # attitude_quad.msg
-  # compass.msg
-  # ctrl_info.msg
-  # gimbal.msg
-  # global_position.msg
-  # local_position.msg
-  # velocity.msg
-  # rc_channels.msg
-)
+# add_message_files(
+#    FILES
+# )
 
 ## Generate services in the 'srv' folder
-add_service_files(
-   FILES
-  # control_manager.srv
-  # action.srv
-  # attitude.srv
-  # camera_action.srv
-  # gimbal_angle.srv
-  # gimbal_speed.srv
-)
+# add_service_files(
+#    FILES
+# )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -76,12 +61,9 @@ add_service_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-   DEPENDENCIES
-   geometry_msgs   
-   nav_msgs   
-   std_msgs
-)
+# generate_messages(
+#    DEPENDENCIES
+# )
 
 ###################################
 ## catkin specific configuration ##
@@ -107,13 +89,14 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 
-file(GLOB DJI_SDK_LIB_SOURCES include/DJI_LIB/*.cpp) 
+file(GLOB DJI_SDK_LIB_SOURCES src/dji_sdk_lib/*.cpp) 
 
-##SET_SOURCE_FILES_PROPERTIES(${DJI_SDK_LIB_SOURCES} PROPERTIES LANGUAGE CXX)
+set(CMAKE_MODULE_PATH "/usr/local/lib/cmake/eigen3/;${CMAKE_MODULE_PATH}")
+find_package(Eigen3 REQUIRED)
 
 include_directories(
-  include
   ${catkin_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
@@ -123,11 +106,8 @@ include_directories(
 
 ## Declare a cpp executable
 add_executable(djiros_node 
-	src/djiMain.cpp 
-	src/ros_interface.cpp
-  src/modules/djiVariable.cpp
-  src/modules/djiPublisher.cpp
-  src/modules/djiService.cpp
+	src/djiros_node.cpp 
+  src/DjiRos.cpp
 	${DJI_SDK_LIB_SOURCES})
 
 ## Add cmake target dependencies of the executable/library
