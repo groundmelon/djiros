@@ -152,6 +152,7 @@ class DjiRos {
     char app_key_buffer[65];     // sdk is using it, so must be class variable
     double gravity;
     Eigen::Matrix3d ros_R_fc;
+    bool only_broadcast;
 
     // align related variables
     enum struct AlignState_t { unaligned, aligning, aligned };

@@ -1,7 +1,0 @@
-uint8 flag
-int16 yaw
-int16 x
-int16 y
-int16 duration
----
-bool result 

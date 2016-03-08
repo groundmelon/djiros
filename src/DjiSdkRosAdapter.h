@@ -42,7 +42,6 @@ class DjiSdkRosAdapter {
     }
 
     static void obtainControlCallback(CoreAPI *This, Header *header, void *userData) {
-        CoreAPI::setControlCallback(This, header, nullptr);
         unsigned short ack_data = AC_COMMON_NO_RESPONSE;
 
         int event = -1;
@@ -71,7 +70,19 @@ class DjiSdkRosAdapter {
                 break;
         }
 
-        ((This_t *)userData)->m_obtainControlCallback(event);
+        if (event == 0 || event == 1) {
+            // Obtain success or release success
+            ((This_t *)userData)->m_obtainControlCallback(event);
+        } else if (event == -2) {
+            // Running, resent commnad
+            ((This_t *)userData)->obtain_control( ((This_t *)userData)->last_obtain_control_flag );
+        } else {
+            // Failed, provide error information to callback function
+            CoreAPI::setControlCallback(This, header, nullptr);
+            ((This_t *)userData)->m_obtainControlCallback(event);
+
+        }
+
     }
 
     static void broadcastCallback(CoreAPI *coreAPI __UNUSED, Header *header __UNUSED,
@@ -155,6 +166,7 @@ class DjiSdkRosAdapter {
     void obtain_control(bool b) {
         ROS_ASSERT(is_inited);
         coreAPI->setControl(b, obtainControlCallback, (UserData) this);
+        last_obtain_control_flag = b;
     }
 
     template <class T>
@@ -217,6 +229,7 @@ class DjiSdkRosAdapter {
     bool is_terminated;
 
     bool activation_ack_flag;
+    bool last_obtain_control_flag;
 
     std::unique_ptr<HardDriverRos> m_hd;
 

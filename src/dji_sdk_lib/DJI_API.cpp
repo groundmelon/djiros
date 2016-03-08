@@ -193,13 +193,8 @@ bool CoreAPI::getHotPointData() const { return hotPointData; }
 bool CoreAPI::getWayPointData() const { return wayPointData; }
 bool CoreAPI::getFollowData() const { return followData; }
 
-CallBack g_mine_control_callback = 0;
-UserData g_user_data = 0;
-
 void CoreAPI::setControl(bool enable, CallBack callback, UserData userData)
 {
-    g_mine_control_callback = callback ? callback : CoreAPI::setControlCallback;
-    g_user_data = userData;
     unsigned char data = enable ? 1 : 0;
     send(2, DJI::onboardSDK::encrypt, SET_CONTROL, CODE_SETCONTROL, &data, 1, 500, 2,
          callback ? callback : CoreAPI::setControlCallback, userData);
@@ -386,13 +381,13 @@ void CoreAPI::setControlCallback(CoreAPI *This, Header *header, UserData userDat
         case ACK_SETCONTROL_OBTAIN_RUNNING:
             API_LOG(This->driver, STATUS_LOG, "obtain control running\n");
             This->send(2, DJI::onboardSDK::encrypt, SET_CONTROL, CODE_SETCONTROL, &data, 1, 500,
-                       2, g_mine_control_callback? g_mine_control_callback : CoreAPI::setControlCallback, g_user_data);
+                       2, CoreAPI::setControlCallback);
             break;
         case ACK_SETCONTROL_RELEASE_RUNNING:
             API_LOG(This->driver, STATUS_LOG, "release control running\n");
             data = 0;
             This->send(2, DJI::onboardSDK::encrypt, SET_CONTROL, CODE_SETCONTROL, &data, 1, 500,
-                       2, g_mine_control_callback? g_mine_control_callback : CoreAPI::setControlCallback, g_user_data);
+                       2, CoreAPI::setControlCallback);
             break;
         case ACK_SETCONTROL_IOC:
             API_LOG(This->driver, STATUS_LOG, "IOC mode opening can not obtain control\n");

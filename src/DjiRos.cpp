@@ -35,7 +35,6 @@ DjiRos::DjiRos(ros::NodeHandle& nh)
 
     int uart_or_usb;
     int A3_or_M100;
-    bool only_broadcast;
     nh.param("serial_name", serial_name, std::string("/dev/null"));
     nh.param("baud_rate", baud_rate, 230400);
     nh.param("app_id", app_id, 0);
@@ -99,33 +98,46 @@ DjiRos::DjiRos(ros::NodeHandle& nh)
     pub_gimbal = nh.advertise<geometry_msgs::Vector3Stamped>("gimbal", 10);
     pub_time_ref = nh.advertise<sensor_msgs::TimeReference>("tick", 10);
 
-    ctrl_sub =
-        nh.subscribe<sensor_msgs::Joy>("ctrl", 10, boost::bind(&DjiRos::control_callback, this, _1),
-                                       ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
-    gimbal_ctrl_sub = nh.subscribe<geometry_msgs::PoseStamped>(
-        "gimbal_ctrl", 10, boost::bind(&DjiRos::gimbal_control_callback, this, _1),
-        ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
-    gimbal_speed_ctrl_sub = nh.subscribe<geometry_msgs::TwistStamped>(
-        "gimbal_speed_ctrl", 10, boost::bind(&DjiRos::gimbal_speed_control_callback, this, _1),
-        ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
+    if (!only_broadcast) {
+        ctrl_sub =
+            nh.subscribe<sensor_msgs::Joy>("ctrl", 10, boost::bind(&DjiRos::control_callback, this, _1),
+                                           ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
+        gimbal_ctrl_sub = nh.subscribe<geometry_msgs::PoseStamped>(
+            "gimbal_ctrl", 10, boost::bind(&DjiRos::gimbal_control_callback, this, _1),
+            ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
+        gimbal_speed_ctrl_sub = nh.subscribe<geometry_msgs::TwistStamped>(
+            "gimbal_speed_ctrl", 10, boost::bind(&DjiRos::gimbal_speed_control_callback, this, _1),
+            ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
+    }
 
-    if (!sdk.activate(&user_act_data)) {
+
+    if (!only_broadcast && !sdk.activate(&user_act_data)) {
         throw std::runtime_error("Activation failed");
     };
 
     sdk.setBroadcastCallback(&DjiRos::on_broadcast, this);
-    sdk.setObtainControlCallback(&DjiRos::on_control, this);
+    
+    if (!only_broadcast) {
+        sdk.setObtainControlCallback(&DjiRos::on_control, this);
+    }
     // sdk.setFromMobileCallback(&DjiRos::transparent_transmission_callback, this);
 }
 
 DjiRos::~DjiRos() {
-    sdk.obtain_control(false);
-    // Wait sometime for display information, but will shutdown even if sdk has wrong/no response
-    ros::Duration(1.0).sleep();
+    if (!only_broadcast) {
+        ROS_INFO("[djiros] Release on exit.");
+        sdk.obtain_control(false);
+        // Wait sometime for display information, but will shutdown even if sdk has wrong/no response
+        ros::Duration(0.5).sleep();
+    }
 }
 
 void DjiRos::process() {
     ros::Time now_time = ros::Time::now();
+
+    if (only_broadcast) {
+        return;
+    }
 
     bool switch_into_F_mode = api_trigger.isRaiseEdge();
     bool out_of_F_mode = (api_trigger.getLevel() == 0);
@@ -161,6 +173,11 @@ void DjiRos::process() {
                     ctrl_state = CtrlState_t::released;
                     ROS_WARN("[djiros] No ctrl cmd received. Exit api mode.");
                 }
+                else {
+                    if ((now_time - wait_start_stamp).toSec() > 1.0) {
+                        ROS_INFO_THROTTLE(1.0, "[djiros] Waiting for control command ...");
+                    }
+                }
             }
         }
     } else if (ctrl_state == CtrlState_t::obtaining) {
@@ -178,7 +195,8 @@ void DjiRos::process() {
             ctrl_state = CtrlState_t::released;
         } else {
             if (ctrl_cmd_stream_timeout) {
-                ROS_ERROR("[djiros] Control command is stopped! Exit api mode.");
+                ROS_ERROR("[djiros] Control command is stopped for [%.0f] ms! Exit api mode.",
+                    (now_time - last_ctrl_stamp).toSec() * 1000.0);
                 obtain_control(false);
                 ctrl_state = CtrlState_t::released;
             }
@@ -247,9 +265,7 @@ void DjiRos::on_broadcast() {
     } else  // Will not align with fmu, just use ros::Time::now()
     {
         static ros::Time last_msg_stamp;
-        if (last_msg_stamp.toSec() > 1.0) {
-            ROS_DEBUG("[djiros] Not align with fmu, dt=%.3f", (now_time - last_msg_stamp).toSec());
-        }
+        ROS_DEBUG("[djiros] Not align with fmu, msg-seq-interval=%.3f", (now_time - last_msg_stamp).toSec());
         msg_stamp = now_time;
         last_msg_stamp = msg_stamp;
     }
@@ -289,7 +305,6 @@ void DjiRos::on_broadcast() {
     }
 
     if ((msg_flags & HAS_V)) {
-
         geometry_msgs::Vector3Stamped velo_msg;
         if (bc_data.v.health) {
             velo_msg.header.stamp = msg_stamp;
@@ -373,19 +388,26 @@ void DjiRos::on_broadcast() {
     }
 }
 
+// For meaning of event, see DjiSdkRosAdapter.h, function
+// static void obtainControlCallback(CoreAPI *This, Header *header, void *userData)
 void DjiRos::on_control(int event) {
     if (event == 1) {
         ROS_ERROR(ANSI_COLOR_GREEN
                   "[djiros] ****** Acquire control success! ******" ANSI_COLOR_RESET);
         sdk_control_flag = true;
-    } else if (event == 0 || (event == -1 || api_trigger.getLevel() == 0)) {
+    } else if (event == 0) {
         ROS_ERROR(ANSI_COLOR_CYAN
                   "[djiros] ****** Release control success! ******" ANSI_COLOR_RESET);
         sdk_control_flag = false;
+    } else if (event == -1 && api_trigger.getLevel() == 0) {
+        // RC is not in F mode
+        ROS_ERROR(ANSI_COLOR_CYAN
+                  "[djiros] ****** Control is released by RC ******" ANSI_COLOR_RESET);
+        sdk_control_flag = false;
     } else if (event == -2) {
-        // Running
+        // Running, pass
     } else {
-        // ROS_ERROR("[djiros] Obtain/Release control operation failed. %d", event);
+        ROS_ERROR("[djiros] Obtain/Release control operation failed. event=%d", event);
     }
 }
 
