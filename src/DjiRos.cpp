@@ -316,13 +316,18 @@ void DjiRos::on_broadcast() {
 
         pub_velo.publish(velo_msg);
     }
-
+#define GPS_TO_DEGREES 1
     if ((msg_flags & HAS_POS)) {
+        double scale_factor = 1.0;
+     
+#if GPS_TO_DEGREES
+        scale_factor = 180.0 / M_PI;
+#endif
         sensor_msgs::NavSatFix gps_msg;
         gps_msg.header.stamp = msg_stamp;
         gps_msg.header.frame_id = std::string("NED");
-        gps_msg.latitude = bc_data.pos.latitude;
-        gps_msg.longitude = bc_data.pos.longitude;
+        gps_msg.latitude = bc_data.pos.latitude * scale_factor;
+        gps_msg.longitude = bc_data.pos.longitude * scale_factor;
         // gps_msg.altitude = bc_data.pos.alti; // baro height
         gps_msg.altitude = bc_data.pos.height;  // height w.r.t ground
         gps_msg.status.status = bc_data.pos.health;
