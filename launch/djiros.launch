@@ -3,8 +3,9 @@
 		launch-prefix="" >
 		<env name="ROSCONSOLE_FORMAT" value="[${time}] ${message}"/>
 		<!-- node parameters -->
-		<param name="serial_name" type="string" value="/dev/ttyUSBNcore"/>
+		<param name="serial_name" type="string" value="/dev/ttyUSB0"/>
 		<param name="baud_rate" type="int" value="230400"/>
+		<param name="A3_or_M100" type="int" value="0"/>
 		<param name="app_id" type="int" value="$(env DJIROS_APPID)"/>
 		<param name="app_version" type="int" value="1"/>
 		<param name="enc_key" type="string" value="$(env DJIROS_ENCKEY)"/>	
