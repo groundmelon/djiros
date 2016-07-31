@@ -44,9 +44,11 @@ DjiRos::DjiRos(ros::NodeHandle& nh)
 
     nh.param("uart_or_usb", uart_or_usb, 0);  // chosse uart as default
     nh.param("A3_or_M100", A3_or_M100, 1);    // chosse M100 as default
-    nh.param("only_broadcast", only_broadcast,
+    nh.param("only_broadcast",
+             only_broadcast,
              false);  // broadcast mode, no control signal send to sdk
-    nh.param("align_with_fmu", align_with_fmu,
+    nh.param("align_with_fmu",
+             align_with_fmu,
              false);  // Where djiros will use ticks from fmu to align with it
     nh.param("gravity", gravity, 9.79);
 
@@ -62,8 +64,9 @@ DjiRos::DjiRos(ros::NodeHandle& nh)
 
     if (A3_or_M100) {  // for M100
         user_act_data.version = 0x03010a00;
-    } else {
+    } else {  // for A3
         user_act_data.version = 0x03016400;
+        DTFlag = DataFlag_t(true);
     }
 
     strncpy((char*)user_act_data.iosID, app_bundle_id.c_str(), 32);
@@ -93,47 +96,70 @@ DjiRos::DjiRos(ros::NodeHandle& nh)
     pub_imu = nh.advertise<sensor_msgs::Imu>("imu", 10);
     pub_velo = nh.advertise<geometry_msgs::Vector3Stamped>("velo", 10);
     pub_gps = nh.advertise<sensor_msgs::NavSatFix>("gps", 10);
+    pub_gps_odom = nh.advertise<nav_msgs::Odometry>("gps_odom", 10);
     pub_mag = nh.advertise<sensor_msgs::MagneticField>("mag", 10);
     pub_rc = nh.advertise<sensor_msgs::Joy>("rc", 10);
     pub_gimbal = nh.advertise<geometry_msgs::Vector3Stamped>("gimbal", 10);
     pub_time_ref = nh.advertise<sensor_msgs::TimeReference>("tick", 10);
 
     if (!only_broadcast) {
-        ctrl_sub =
-            nh.subscribe<sensor_msgs::Joy>("ctrl", 10, boost::bind(&DjiRos::control_callback, this, _1),
-                                           ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
+        ctrl_sub = nh.subscribe<sensor_msgs::Joy>("ctrl",
+                                                  10,
+                                                  boost::bind(&DjiRos::control_callback, this, _1),
+                                                  ros::VoidConstPtr(),
+                                                  ros::TransportHints().tcpNoDelay());
         gimbal_ctrl_sub = nh.subscribe<geometry_msgs::PoseStamped>(
-            "gimbal_ctrl", 10, boost::bind(&DjiRos::gimbal_control_callback, this, _1),
-            ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
+            "gimbal_ctrl",
+            10,
+            boost::bind(&DjiRos::gimbal_control_callback, this, _1),
+            ros::VoidConstPtr(),
+            ros::TransportHints().tcpNoDelay());
         gimbal_speed_ctrl_sub = nh.subscribe<geometry_msgs::TwistStamped>(
-            "gimbal_speed_ctrl", 10, boost::bind(&DjiRos::gimbal_speed_control_callback, this, _1),
-            ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
+            "gimbal_speed_ctrl",
+            10,
+            boost::bind(&DjiRos::gimbal_speed_control_callback, this, _1),
+            ros::VoidConstPtr(),
+            ros::TransportHints().tcpNoDelay());
     }
 
-
     if (!only_broadcast && !sdk.activate(&user_act_data)) {
-        throw std::runtime_error("Activation failed");
+        while(ros::ok()) {
+            ROS_INFO("Activation retring");
+            if (sdk.activate(&user_act_data))
+                break;
+        }
     };
 
     sdk.setBroadcastCallback(&DjiRos::on_broadcast, this);
-    
+
     if (!only_broadcast) {
         sdk.setObtainControlCallback(&DjiRos::on_control, this);
     }
     // sdk.setFromMobileCallback(&DjiRos::transparent_transmission_callback, this);
+
+    sdk.coreAPI->setSyncFreq(30);
 }
 
 DjiRos::~DjiRos() {
     if (!only_broadcast) {
         ROS_INFO("[djiros] Release on exit.");
         sdk.obtain_control(false);
-        // Wait sometime for display information, but will shutdown even if sdk has wrong/no response
+        // Wait sometime for display information, but will shutdown even if sdk has wrong/no
+        // response
         ros::Duration(0.5).sleep();
     }
 }
 
 void DjiRos::process() {
     ros::Time now_time = ros::Time::now();
+
+    // {
+    //     static ros::Time last_trig_stamp = now_time;
+    //     if ((now_time - last_trig_stamp).toSec() > 0.05) {
+    //         last_trig_stamp = now_time;
+    //         // sdk.coreAPI->setSyncFreq(10);
+    //     }
+    // }
 
     if (only_broadcast) {
         return;
@@ -172,8 +198,7 @@ void DjiRos::process() {
                 if (ctrl_cmd_wait_timeout) {
                     ctrl_state = CtrlState_t::released;
                     ROS_WARN("[djiros] No ctrl cmd received. Exit api mode.");
-                }
-                else {
+                } else {
                     if ((now_time - wait_start_stamp).toSec() > 1.0) {
                         ROS_INFO_THROTTLE(1.0, "[djiros] Waiting for control command ...");
                     }
@@ -196,7 +221,7 @@ void DjiRos::process() {
         } else {
             if (ctrl_cmd_stream_timeout) {
                 ROS_ERROR("[djiros] Control command is stopped for [%.0f] ms! Exit api mode.",
-                    (now_time - last_ctrl_stamp).toSec() * 1000.0);
+                          (now_time - last_ctrl_stamp).toSec() * 1000.0);
                 obtain_control(false);
                 ctrl_state = CtrlState_t::released;
             }
@@ -210,12 +235,12 @@ void DjiRos::on_broadcast() {
     unsigned short msg_flags = bc_data.dataFlag;
 
     // TODO:
-    // ROS_INFO("Msg flag: %x", bc_data.dataFlag);
+    // ROS_INFO("Msg flag: %hx", bc_data.dataFlag);
 
     ros::Time msg_stamp = now_time;
 
     if (align_with_fmu) {
-        bool msg_can_be_used_for_align = (msg_flags & HAS_TIME) && (msg_flags & HAS_W);
+        bool msg_can_be_used_for_align = (msg_flags & DTFlag.HAS_TIME) && (msg_flags & DTFlag.HAS_W);
         // only use 100HZ imu bag (0x3f) to align
         if (align_state == AlignState_t::unaligned && msg_can_be_used_for_align) {
             base_time = now_time - _TICK2ROSTIME(bc_data.timeStamp.time);
@@ -258,19 +283,21 @@ void DjiRos::on_broadcast() {
             if (std::fabs(dt) > TIME_DIFF_ALERT) {
                 static int cnt = 0;
                 ++cnt;
-                ROS_WARN_THROTTLE(1.0, "[djiros] SysTime - TickTime = %.0f ms [%d]", dt * 1000,
-                                  cnt);
+                ROS_WARN_THROTTLE(
+                    1.0, "[djiros] SysTime - TickTime = %.0f ms [%d]", dt * 1000, cnt);
             }
         }
     } else  // Will not align with fmu, just use ros::Time::now()
     {
         static ros::Time last_msg_stamp;
-        ROS_DEBUG("[djiros] Not align with fmu, msg-seq-interval=%.3f", (now_time - last_msg_stamp).toSec());
+        ROS_DEBUG("[djiros] Not align with fmu, msg-seq-interval=%.3f",
+                  (now_time - last_msg_stamp).toSec());
         msg_stamp = now_time;
         last_msg_stamp = msg_stamp;
     }
 
-    if ((msg_flags & HAS_W) && (msg_flags & HAS_A) && (msg_flags & HAS_Q)) {
+    if ((msg_flags & DTFlag.HAS_TIME) && (msg_flags & DTFlag.HAS_W) && (msg_flags & DTFlag.HAS_A) &&
+        (msg_flags & DTFlag.HAS_Q)) {
         Quaterniond q;
         q.w() = bc_data.q.q0;
         q.x() = bc_data.q.q1;
@@ -304,7 +331,7 @@ void DjiRos::on_broadcast() {
         pub_imu.publish(imu_msg);
     }
 
-    if ((msg_flags & HAS_V)) {
+    if ((msg_flags & DTFlag.HAS_V)) {
         geometry_msgs::Vector3Stamped velo_msg;
         if (bc_data.v.health) {
             velo_msg.header.stamp = msg_stamp;
@@ -316,13 +343,11 @@ void DjiRos::on_broadcast() {
 
         pub_velo.publish(velo_msg);
     }
-#define GPS_TO_DEGREES 1
-    if ((msg_flags & HAS_POS)) {
-        double scale_factor = 1.0;
-     
-#if GPS_TO_DEGREES
-        scale_factor = 180.0 / M_PI;
-#endif
+
+    if ((msg_flags & DTFlag.HAS_POS)) {
+        // Convert to degrees
+        double scale_factor = 180.0 / M_PI;
+
         sensor_msgs::NavSatFix gps_msg;
         gps_msg.header.stamp = msg_stamp;
         gps_msg.header.frame_id = std::string("NED");
@@ -335,7 +360,26 @@ void DjiRos::on_broadcast() {
         pub_gps.publish(gps_msg);
     }
 
-    if ((msg_flags & HAS_MAG)) {
+    if (msg_flags & DTFlag.HAS_GPS) {
+        std::stringstream ss;
+        ss << "date:" << bc_data.gps.date << " time:" << bc_data.gps.time;
+
+        nav_msgs::Odometry gps_odom_msg;
+        
+        gps_odom_msg.header.stamp = msg_stamp;
+        gps_odom_msg.header.frame_id = std::string("NED");
+        gps_odom_msg.child_frame_id = ss.str();
+        gps_odom_msg.pose.pose.position.x = static_cast<double>(bc_data.gps.longitude) / 1.0e7;
+        gps_odom_msg.pose.pose.position.y = static_cast<double>(bc_data.gps.latitude) / 1.0e7;
+        gps_odom_msg.pose.pose.position.z = static_cast<double>(bc_data.gps.Hmsl);
+        gps_odom_msg.twist.twist.linear.x = bc_data.gps.velocityNorth;
+        gps_odom_msg.twist.twist.linear.y = bc_data.gps.velocityEast;
+        gps_odom_msg.twist.twist.linear.z = bc_data.gps.velocityGround;
+
+        pub_gps_odom.publish(gps_odom_msg);
+    }
+
+    if ((msg_flags & DTFlag.HAS_MAG)) {
         sensor_msgs::MagneticField mag_msg;
         mag_msg.header.stamp = msg_stamp;
         mag_msg.header.frame_id = std::string("NED");
@@ -352,7 +396,7 @@ void DjiRos::on_broadcast() {
         rc_is_on = false;
     }
 
-    if ((msg_flags & HAS_RC) && rc_is_on) {
+    if ((msg_flags & DTFlag.HAS_RC) && rc_is_on) {
         sensor_msgs::Joy rc_msg;
         rc_msg.header.stamp = msg_stamp;
         rc_msg.header.frame_id = std::string("rc");
@@ -365,14 +409,14 @@ void DjiRos::on_broadcast() {
 
         rc_msg.buttons.push_back(static_cast<int>(bc_data.status));
         rc_msg.buttons.push_back(static_cast<int>(bc_data.battery));
-        rc_msg.buttons.push_back(static_cast<int>(bc_data.ctrlInfo.device));
+        rc_msg.buttons.push_back(static_cast<int>(bc_data.ctrlInfo.deviceStatus));
 
         pub_rc.publish(rc_msg);
 
         api_trigger.setValue(bc_data.rc.mode);
     }
 
-    if ((msg_flags & HAS_GIMBAL)) {
+    if ((msg_flags & DTFlag.HAS_GMBL)) {
         geometry_msgs::Vector3Stamped gmb_msg;
         gmb_msg.header.stamp = msg_stamp;
         gmb_msg.header.frame_id = std::string("gimbal");
@@ -383,11 +427,15 @@ void DjiRos::on_broadcast() {
         pub_gimbal.publish(gmb_msg);
     }
 
-    if ((msg_flags & HAS_TIME)) {
+    if ((msg_flags & DTFlag.HAS_TIME)) {
         sensor_msgs::TimeReference tmr_msg;
         tmr_msg.header.stamp = msg_stamp;
         tmr_msg.time_ref = ros::Time(static_cast<double>(bc_data.timeStamp.time));
         tmr_msg.source = std::string("from fmu, 400 ticks/sec");
+        
+        if (bc_data.timeStamp.syncFlag) {
+            ROS_INFO("sync:%d", bc_data.timeStamp.syncFlag);
+        }
 
         pub_time_ref.publish(tmr_msg);
     }

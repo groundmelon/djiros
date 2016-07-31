@@ -24,7 +24,7 @@ namespace onboardSDK {
 class DjiSdkRosAdapter {
   public:
     typedef DjiSdkRosAdapter This_t;
-    DjiSdkRosAdapter() : is_inited(false), is_terminated(false) {
+    DjiSdkRosAdapter() : is_inited(false), is_terminated(false), activation_result(false) {
         sleep_duration = std::chrono::milliseconds(1);
     }
 
@@ -38,20 +38,27 @@ class DjiSdkRosAdapter {
 
     static void activateCallback(CoreAPI *This, Header *header, void *userData) {
         CoreAPI::activateCallback(This, header, nullptr);
+        unsigned short ack_data;
+        if (header->length - EXC_DATA_SIZE <= 2) {
+            memcpy((unsigned char *)&ack_data,
+                   ((unsigned char *)header) + sizeof(Header),
+                   (header->length - EXC_DATA_SIZE));
+            ((This_t *)userData)->activation_result = (ack_data == ACK_ACTIVE_SUCCESS);
+        }
+        
         ((This_t *)userData)->activation_ack_flag = true;
     }
 
     static void obtainControlCallback(CoreAPI *This, Header *header, void *userData) {
-        unsigned short ack_data = AC_COMMON_NO_RESPONSE;
+        unsigned short ack_data = ACK_COMMON_NO_RESPONSE;
 
         int event = -1;
-        if (header->length - EXC_DATA_SIZE <= sizeof(ack_data))
-        {
-            memcpy((unsigned char *)&ack_data, ((unsigned char *)header) + sizeof(Header),
+        if (header->length - EXC_DATA_SIZE <= sizeof(ack_data)) {
+            memcpy((unsigned char *)&ack_data,
+                   ((unsigned char *)header) + sizeof(Header),
                    (header->length - EXC_DATA_SIZE));
         }
-        switch (ack_data)
-        {
+        switch (ack_data) {
             case ACK_SETCONTROL_NEED_MODE_F:
                 event = -1;
                 break;
@@ -75,17 +82,16 @@ class DjiSdkRosAdapter {
             ((This_t *)userData)->m_obtainControlCallback(event);
         } else if (event == -2) {
             // Running, resent commnad
-            ((This_t *)userData)->obtain_control( ((This_t *)userData)->last_obtain_control_flag );
+            ((This_t *)userData)->obtain_control(((This_t *)userData)->last_obtain_control_flag);
         } else {
             // Failed, provide error information to callback function
             CoreAPI::setControlCallback(This, header, nullptr);
             ((This_t *)userData)->m_obtainControlCallback(event);
-
         }
-
     }
 
-    static void broadcastCallback(CoreAPI *coreAPI __UNUSED, Header *header __UNUSED,
+    static void broadcastCallback(CoreAPI *coreAPI __UNUSED,
+                                  Header *header __UNUSED,
                                   void *userData) {
         ((This_t *)userData)->m_broadcastCallback();
     }
@@ -140,7 +146,7 @@ class DjiSdkRosAdapter {
 
         worker_thread = std::thread(&This_t::threadWorkerFunc, this);
 
-        coreAPI->getVersion();
+        coreAPI->getDroneVersion();
 
         is_inited = true;
         return is_inited;
@@ -148,7 +154,7 @@ class DjiSdkRosAdapter {
 
     void wait_for_ack(bool &ack_flag, std::string tips = std::string()) {
         ack_flag = false;
-        while (!ack_flag) {
+        while (!ack_flag && ros::ok()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
             if (tips.size()) {
                 ROS_WARN_STREAM_DELAYED_THROTTLE(1.0, tips);
@@ -160,7 +166,7 @@ class DjiSdkRosAdapter {
         ROS_ASSERT(is_inited);
         coreAPI->activate(data, activateCallback, (UserData) this);
         wait_for_ack(activation_ack_flag, "[djiros] Waiting for activation result...");
-        return 1 == coreAPI->getBroadcastData().activation;
+        return this->activation_result;
     }
 
     void obtain_control(bool b) {
@@ -229,6 +235,7 @@ class DjiSdkRosAdapter {
     bool is_terminated;
 
     bool activation_ack_flag;
+    bool activation_result;
     bool last_obtain_control_flag;
 
     std::unique_ptr<HardDriverRos> m_hd;

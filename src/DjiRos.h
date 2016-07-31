@@ -44,8 +44,72 @@
 #include <geometry_msgs/Vector3Stamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <nav_msgs/Odometry.h>
 
 #include "DjiSdkRosAdapter.h"
+
+class DataFlag_t {
+  public:
+    uint16_t HAS_TIME;
+    uint16_t HAS_Q;
+    uint16_t HAS_A;
+    uint16_t HAS_V;
+    uint16_t HAS_W;
+    uint16_t HAS_POS;
+    uint16_t HAS_GPS;
+    uint16_t HAS_RTK;
+    uint16_t HAS_MAG;
+    uint16_t HAS_RC;
+    uint16_t HAS_GMBL;
+    uint16_t HAS_STAT;
+    uint16_t HAS_BATT;
+    uint16_t HAS_CTRL;
+
+    DataFlag_t() : DataFlag_t(false){};
+
+    DataFlag_t(bool is_A3)
+        : HAS_TIME(0x00),
+          HAS_Q(0x00),
+          HAS_A(0x00),
+          HAS_V(0x00),
+          HAS_W(0x00),
+          HAS_POS(0x00),
+          HAS_GPS(0x00),
+          HAS_RTK(0x00),
+          HAS_MAG(0x00),
+          HAS_RC(0x00),
+          HAS_GMBL(0x00),
+          HAS_STAT(0x00),
+          HAS_BATT(0x00),
+          HAS_CTRL(0x00) {
+        uint16_t flag = 0x01;
+        HAS_TIME = get_and_shift(flag);
+        HAS_Q = get_and_shift(flag);
+        HAS_A = get_and_shift(flag);
+        HAS_V = get_and_shift(flag);
+        HAS_W = get_and_shift(flag);
+        HAS_POS = get_and_shift(flag);
+        if (is_A3) {
+            HAS_GPS = get_and_shift(flag);
+            HAS_RTK = get_and_shift(flag);
+        }
+        HAS_MAG = get_and_shift(flag);
+        HAS_RC = get_and_shift(flag);
+        HAS_GMBL = get_and_shift(flag);
+        HAS_STAT = get_and_shift(flag);
+        HAS_BATT = get_and_shift(flag);
+        HAS_CTRL = get_and_shift(flag);
+
+        for (int i = 0; i < 14; ++i) printf("%dth variable: %#x\n", i, *(((uint16_t*)&HAS_TIME) + i));
+    }
+
+  private:
+    uint16_t get_and_shift(uint16_t& flag) {
+        uint16_t save = flag;
+        flag = flag << 1;
+        return save;
+    }
+};
 
 template <class T>
 class LevelTrigger {
@@ -131,6 +195,7 @@ class DjiRos {
     ros::Publisher pub_imu;
     ros::Publisher pub_velo;
     ros::Publisher pub_gps;
+    ros::Publisher pub_gps_odom;
     ros::Publisher pub_mag;
     ros::Publisher pub_rc;
     ros::Publisher pub_gimbal;
@@ -165,14 +230,15 @@ class DjiRos {
     std::list<AlignData_t> alignArray;
 
     LevelTrigger<int16_t> api_trigger;
+    DataFlag_t DTFlag;
 
     /* clang-format off */
-    // Obtain and release control related
-    // released 			+ <switch info F mode> 					= wait_for_command
-    // wait_for_command 	+ <control command is streaming in> 	= obtaining
-    // obtaining			+ <sdk response obtain successfully>	= obtained
-    // obtained				+ <control command stream timeout>		= released
-    // wait_for_command 	+ <control command wait timeout> 		= released
+    // Obtain and release control status transfer instructions
+    // released             + <switch info F mode>                  = wait_for_command
+    // wait_for_command     + <control command is streaming in>     = obtaining
+    // obtaining            + <sdk response obtain successfully>    = obtained
+    // obtained             + <control command stream timeout>      = released
+    // wait_for_command     + <control command wait timeout>        = released
     /* clang-format on */
     enum struct CtrlState_t { released, wait_for_command, obtaining, obtained };
     CtrlState_t ctrl_state;
