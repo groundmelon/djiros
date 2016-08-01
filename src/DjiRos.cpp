@@ -123,10 +123,9 @@ DjiRos::DjiRos(ros::NodeHandle& nh)
     }
 
     if (!only_broadcast && !sdk.activate(&user_act_data)) {
-        while(ros::ok()) {
+        while (ros::ok()) {
             ROS_INFO("Activation retring");
-            if (sdk.activate(&user_act_data))
-                break;
+            if (sdk.activate(&user_act_data)) break;
         }
     };
 
@@ -136,8 +135,6 @@ DjiRos::DjiRos(ros::NodeHandle& nh)
         sdk.setObtainControlCallback(&DjiRos::on_control, this);
     }
     // sdk.setFromMobileCallback(&DjiRos::transparent_transmission_callback, this);
-
-    // sdk.coreAPI->setSyncFreq(25);
 }
 
 DjiRos::~DjiRos() {
@@ -153,13 +150,14 @@ DjiRos::~DjiRos() {
 void DjiRos::process() {
     ros::Time now_time = ros::Time::now();
 
-    // {
-    //     static ros::Time last_trig_stamp = now_time;
-    //     if ((now_time - last_trig_stamp).toSec() > 0.05) {
-    //         last_trig_stamp = now_time;
-    //         // sdk.coreAPI->setSyncFreq(10);
-    //     }
-    // }
+    {
+        sync_session.locker.lock();
+        if (SyncSession_t::Status::RecvReq == sync_session.status) {
+            sdk.coreAPI->setSyncFreq(sync_session.freq);
+            sync_session.status = SyncSession_t::Status::ForwardReq;
+        }
+        sync_session.locker.unlock();
+    }
 
     if (only_broadcast) {
         return;
@@ -240,7 +238,8 @@ void DjiRos::on_broadcast() {
     ros::Time msg_stamp = now_time;
 
     if (align_with_fmu) {
-        bool msg_can_be_used_for_align = (msg_flags & DTFlag.HAS_TIME) && (msg_flags & DTFlag.HAS_W);
+        bool msg_can_be_used_for_align =
+            (msg_flags & DTFlag.HAS_TIME) && (msg_flags & DTFlag.HAS_W);
         // only use 100HZ imu bag (0x3f) to align
         if (align_state == AlignState_t::unaligned && msg_can_be_used_for_align) {
             base_time = now_time - _TICK2ROSTIME(bc_data.timeStamp.time);
@@ -365,7 +364,7 @@ void DjiRos::on_broadcast() {
         ss << "date:" << bc_data.gps.date << " time:" << bc_data.gps.time;
 
         nav_msgs::Odometry gps_odom_msg;
-        
+
         gps_odom_msg.header.stamp = msg_stamp;
         gps_odom_msg.header.frame_id = std::string("NED");
         gps_odom_msg.child_frame_id = ss.str();
@@ -432,12 +431,20 @@ void DjiRos::on_broadcast() {
         tmr_msg.header.stamp = msg_stamp;
         tmr_msg.time_ref = ros::Time(static_cast<double>(bc_data.timeStamp.time));
         tmr_msg.source = std::string("from fmu, 400 ticks/sec");
-        
-        if (bc_data.timeStamp.syncFlag) {
-            ROS_INFO("sync:%d", bc_data.timeStamp.syncFlag);
-        }
 
         pub_time_ref.publish(tmr_msg);
+    }
+
+    if ((msg_flags & DTFlag.HAS_TIME) && bc_data.timeStamp.syncFlag) {
+        sync_session.locker.lock();
+
+        ROS_INFO("sync:%d", bc_data.timeStamp.syncFlag);
+
+        ASSERT_EQUALITY(sync_session.status, SyncSession_t::Status::RecvReq);
+        sync_session.header.stamp = msg_stamp;
+        sync_session.status = SyncSession_t::Status::RecvAck;
+
+        sync_session.locker.unlock();
     }
 }
 

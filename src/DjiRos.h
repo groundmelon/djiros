@@ -47,6 +47,9 @@
 #include <nav_msgs/Odometry.h>
 
 #include "DjiSdkRosAdapter.h"
+#include "HardwareSync.h"
+
+#define ASSERT_EQUALITY(x, y) ROS_ASSERT_MSG((x) == (y), "_1:%d _2:%d", (int)x, (int)y);
 
 class DataFlag_t {
   public:
@@ -206,6 +209,7 @@ class DjiRos {
 
   public:
     DJI::onboardSDK::DjiSdkRosAdapter sdk;
+
     DjiRos(ros::NodeHandle& nh);
     ~DjiRos();
     void on_broadcast();
@@ -256,6 +260,10 @@ class DjiRos {
     void control_callback(const sensor_msgs::JoyConstPtr& pMsg);
     void gimbal_control_callback(const geometry_msgs::PoseStampedConstPtr& pMsg);
     void gimbal_speed_control_callback(const geometry_msgs::TwistStampedConstPtr& pMsg);
+
+public:
+    SyncSession_t sync_session;
+
 };
 
 #endif
