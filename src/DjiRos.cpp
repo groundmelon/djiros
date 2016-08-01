@@ -137,7 +137,7 @@ DjiRos::DjiRos(ros::NodeHandle& nh)
     }
     // sdk.setFromMobileCallback(&DjiRos::transparent_transmission_callback, this);
 
-    sdk.coreAPI->setSyncFreq(30);
+    // sdk.coreAPI->setSyncFreq(25);
 }
 
 DjiRos::~DjiRos() {
