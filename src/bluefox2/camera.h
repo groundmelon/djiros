@@ -9,6 +9,9 @@
 #include <errno.h>
 #include <dynamic_reconfigure/server.h>
 #include <bluefox2/on_offConfig.h>
+#include <unordered_map>
+
+#include "../HardwareSync.h"
 
 namespace bluefox2
 {
@@ -36,16 +39,18 @@ struct CameraSetting {
 class Camera
 {
   public:
-    constexpr int MAX_CAM_CNT = 10;
+    static constexpr int MAX_CAM_CNT = 10;
 
-    Camera(ros::NodeHandle comm_nh, ros::NodeHandle param_nh);
+    Camera(ros::NodeHandle param_nh);
+    Camera(ros::NodeHandle _param_nh, SyncSession_t* ssptr);
     ~Camera();
     bool isOK();
     void feedImages();
+    bool isSlaveMode();
 
   private:
     // Node handle
-    ros::NodeHandle node, pnode;
+    ros::NodeHandle pnode;
     // mvIMPACT Acquire device manager
     mvIMPACT::acquire::DeviceManager devMgr;
     // create an interface to the device found
@@ -62,14 +67,25 @@ class Camera
     bool ok;
     ros::Time capture_time;
     unsigned int devCnt;
+    bool m_is_slave_mode;
 
     // User specified parameters
     int cam_cnt;
+    double m_fps;
 
     std::unordered_map<std::string, ros::Publisher> img_publisher;
     std::unordered_map<std::string, sensor_msgs::Image> img_buffer;
 
-    bool initSingleMVDevice(unsigned int id);
+    bool initSingleMVDevice(unsigned int id, const CameraSetting& cs);
+    void send_software_request();
     bool grab_image_data();
+
+    // Hardware sync related
+public:
+    SyncSession_t* sync_session_ptr;
+    void feedSyncImages();
+private:
+    bool send_hardware_request();
 };
+
 }

@@ -440,7 +440,7 @@ void DjiRos::on_broadcast() {
 
         ROS_INFO("sync:%d", bc_data.timeStamp.syncFlag);
 
-        ASSERT_EQUALITY(sync_session.status, SyncSession_t::Status::RecvReq);
+        ASSERT_EQUALITY(sync_session.status, SyncSession_t::Status::ForwardReq);
         sync_session.header.stamp = msg_stamp;
         sync_session.status = SyncSession_t::Status::RecvAck;
 

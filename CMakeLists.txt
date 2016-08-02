@@ -32,12 +32,6 @@ find_package(catkin REQUIRED COMPONENTS
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
-
-## Uncomment this if the package has a setup.py. This macro ensures
-## modules and global scripts declared therein get installed
-## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
-
 ################################################
 ## Declare ROS messages, services and actions ##
 ################################################
@@ -91,12 +85,16 @@ catkin_package(
 
 file(GLOB DJI_SDK_LIB_SOURCES src/dji_sdk_lib/*.cpp) 
 
-set(CMAKE_MODULE_PATH "/usr/local/lib/cmake/eigen3/;${CMAKE_MODULE_PATH}")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
+find_package(mvIMPACT REQUIRED)
+
+set(CMAKE_MODULE_PATH "/usr/local/lib/cmake/eigen3/" ${CMAKE_MODULE_PATH})
 find_package(Eigen3 REQUIRED)
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
+  ${mvIMPACT_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
@@ -117,7 +115,17 @@ add_executable(djiros_node
 ## Specify libraries to link a library or executable target against
 target_link_libraries(djiros_node
    ${catkin_LIBRARIES}
+   ${mvIMPACT_LIBRARIES}
 )
 
+add_executable(djifox_node
+  src/djifox_node.cpp
+  src/bluefox2/camera.cpp
+  src/DjiRos.cpp
+  ${DJI_SDK_LIB_SOURCES}
+)
 
-
+target_link_libraries(djifox_node
+   ${catkin_LIBRARIES}
+   ${mvIMPACT_LIBRARIES}
+)
