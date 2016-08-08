@@ -11,7 +11,7 @@
         <rosparam>
             # common setting and default individual settings
             cam_cnt: 1
-            fps:  30.0
+            fps:  30
             gain: 1.0
             use_auto_exposure: true
 
@@ -19,9 +19,9 @@
             camera0:
                 serial: "25001482"
                 topic: image
-                # use_auto_exposure: false
+                use_auto_exposure: false
                 exposure_time_us: 10000
-                auto_speed: 2 # 0--1--2, slow--medium--fast converge to desired value
+                auto_speed: 0 # 0--1--2, slow--medium--fast converge to desired value
                 gain: 1.0
                 is_slave: true
         </rosparam>

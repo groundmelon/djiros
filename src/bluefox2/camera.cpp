@@ -250,6 +250,7 @@ bool Camera::initSingleMVDevice(unsigned int id, const CameraSetting& cs) {
     // Trigger setting
     if (cs.is_slave) {
         ROS_INFO("Set Slave Mode\n");
+        // settings.cameraSetting.triggerMode.write(ctmContinuous);
         settings.cameraSetting.triggerMode.write(ctmOnHighLevel);
         settings.cameraSetting.triggerSource.write(ctsDigIn0);
         settings.cameraSetting.frameDelay_us.write(0);
@@ -390,7 +391,7 @@ bool Camera::send_hardware_request() {
     sync_session_ptr->locker.lock();
 
     if (SyncSession_t::Status::Free == sync_session_ptr->status) {
-        sync_session_ptr->freq = 0; // single request
+        sync_session_ptr->freq = 0;  // single request
         sync_session_ptr->status = SyncSession_t::Status::RecvReq;
         rtnval = true;
     } else {
@@ -409,9 +410,9 @@ void Camera::feedSyncImages() {
 
     ros::Rate r(m_fps);
     while (pnode.ok()) {
-        ros::Time wait_start_time; 
-        ros::Time grab_time; 
-        ros::Time pub_time; 
+        ros::Time wait_start_time;
+        ros::Time grab_time;
+        ros::Time pub_time;
 
         // Send hardware request
         bool send_result = send_hardware_request();
@@ -421,13 +422,32 @@ void Camera::feedSyncImages() {
             goto END_OF_OUT_LOOP;
         }
 
-        // Wait for ack imu received
+        // Request images from both cameras
+        for (auto& item : ids) {
+            const int devIndex = item.second;
+            fi[devIndex]->imageRequestSingle();
+        }
+
+        if (grab_image_data()) {
+            for (auto& item : img_publisher) {
+                const std::string& serial = item.first;
+
+                sync_session_ptr->locker.lock();
+                capture_time = sync_session_ptr->header.stamp;
+                sync_session_ptr->locker.unlock();
+                
+                // After artificial calibrated, we found that actually image is taken one imu later than triggered
+                img_buffer.at(serial).header.stamp = capture_time + ros::Duration(0.01);
+                item.second.publish(img_buffer.at(serial));
+            }
+        }
+
         wait_start_time = ros::Time::now();
         while (1) {
             if (!pnode.ok()) {
                 break;
             }
-
+            // Check imu response
             sync_session_ptr->locker.lock();
 
             bool condition_satisfied = (SyncSession_t::Status::RecvAck == sync_session_ptr->status);
@@ -446,24 +466,12 @@ void Camera::feedSyncImages() {
             }
         }
 
-        grab_time = ros::Time::now();
-        ROS_INFO("All waited %.3f secs for imu ack", (grab_time - send_time).toSec());
-
-        // Imu ack received, need to get image
+        // Imu ack received, reset it
         sync_session_ptr->locker.lock();
         capture_time = sync_session_ptr->header.stamp;
         sync_session_ptr->status = SyncSession_t::Status::Free;
         sync_session_ptr->locker.unlock();
 
-        if (grab_image_data()) {
-            for (auto& item : img_publisher) {
-                const std::string& serial = item.first;
-
-                img_buffer.at(serial).header.stamp = capture_time;
-                item.second.publish(img_buffer.at(serial));
-            }
-        }
-        
         pub_time = ros::Time::now();
         ROS_INFO("Get & pub : %.3f secs", (pub_time - grab_time).toSec());
 

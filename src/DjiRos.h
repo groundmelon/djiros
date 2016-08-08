@@ -103,7 +103,7 @@ class DataFlag_t {
         HAS_BATT = get_and_shift(flag);
         HAS_CTRL = get_and_shift(flag);
 
-        for (int i = 0; i < 14; ++i) printf("%dth variable: %#x\n", i, *(((uint16_t*)&HAS_TIME) + i));
+        // for (int i = 0; i < 14; ++i) printf("%dth variable: %#x\n", i, *(((uint16_t*)&HAS_TIME) + i));
     }
 
   private:

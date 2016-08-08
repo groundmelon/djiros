@@ -135,12 +135,15 @@ DjiRos::DjiRos(ros::NodeHandle& nh)
         sdk.setObtainControlCallback(&DjiRos::on_control, this);
     }
     // sdk.setFromMobileCallback(&DjiRos::transparent_transmission_callback, this);
+
+    // sdk.coreAPI->setSyncFreq(0);
 }
 
 DjiRos::~DjiRos() {
     if (!only_broadcast) {
         ROS_INFO("[djiros] Release on exit.");
         sdk.obtain_control(false);
+        sdk.coreAPI->setSyncFreq(0);
         // Wait sometime for display information, but will shutdown even if sdk has wrong/no
         // response
         ros::Duration(0.5).sleep();
@@ -438,7 +441,7 @@ void DjiRos::on_broadcast() {
     if ((msg_flags & DTFlag.HAS_TIME) && bc_data.timeStamp.syncFlag) {
         sync_session.locker.lock();
 
-        ROS_INFO("sync:%d", bc_data.timeStamp.syncFlag);
+        ROS_DEBUG("sync:%d @ %.3f", bc_data.timeStamp.syncFlag, msg_stamp.toSec());
 
         ASSERT_EQUALITY(sync_session.status, SyncSession_t::Status::ForwardReq);
         sync_session.header.stamp = msg_stamp;
