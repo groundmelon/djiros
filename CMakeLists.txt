@@ -17,6 +17,11 @@ endif()
 set(ADDITIONAL_CXX_FLAG "-Wall -O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ADDITIONAL_CXX_FLAG}")
 
+
+## Set this value to true if camera-imu sync function is needed
+set(ENABLE_DJIFOX true)
+
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -86,7 +91,10 @@ catkin_package(
 file(GLOB DJI_SDK_LIB_SOURCES src/dji_sdk_lib/*.cpp) 
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
-find_package(mvIMPACT REQUIRED)
+
+if(ENABLE_DJIFOX)
+  find_package(mvIMPACT REQUIRED)
+endif(ENABLE_DJIFOX)
 
 set(CMAKE_MODULE_PATH "/usr/local/lib/cmake/eigen3/" ${CMAKE_MODULE_PATH})
 find_package(Eigen3 REQUIRED)
@@ -118,14 +126,18 @@ target_link_libraries(djiros_node
    ${mvIMPACT_LIBRARIES}
 )
 
-add_executable(djifox_node
-  src/djifox_node.cpp
-  src/bluefox2/camera.cpp
-  src/DjiRos.cpp
-  ${DJI_SDK_LIB_SOURCES}
-)
+if (ENABLE_DJIFOX)
 
-target_link_libraries(djifox_node
-   ${catkin_LIBRARIES}
-   ${mvIMPACT_LIBRARIES}
-)
+  add_executable(djifox_node
+    src/djifox_node.cpp
+    src/bluefox2/camera.cpp
+    src/DjiRos.cpp
+    ${DJI_SDK_LIB_SOURCES}
+  )
+
+  target_link_libraries(djifox_node
+     ${catkin_LIBRARIES}
+     ${mvIMPACT_LIBRARIES}
+  )
+
+endif(ENABLE_DJIFOX)

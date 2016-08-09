@@ -296,13 +296,13 @@ void Camera::send_software_request() {
 bool Camera::grab_image_data() {
     int requestNr[MAX_CAM_CNT] = {INVALID_ID};
 
-    ros::Time s1 = ros::Time::now();
+    // ros::Time s1 = ros::Time::now();
     for (auto& item : ids) {
         const int devIndex = item.second;
         requestNr[devIndex] = fi[devIndex]->imageRequestWaitFor(300);
     }
-    ros::Time s2 = ros::Time::now();
-    ROS_INFO("imageRequestWaitFor %7.3f ms", (s2 - s1).toSec() * 1000.0);
+    // ros::Time s2 = ros::Time::now();
+    // ROS_INFO("imageRequestWaitFor %7.3f ms", (s2 - s1).toSec() * 1000.0);
 
     bool status = true;
     for (auto& item : ids) {
@@ -395,7 +395,7 @@ bool Camera::send_hardware_request() {
         sync_session_ptr->status = SyncSession_t::Status::RecvReq;
         rtnval = true;
     } else {
-        ROS_INFO("[djifox] sync status : %d. Not send hardware request.", sync_session_ptr->status);
+        ROS_WARN("[djifox] sync status : %d. Not send hardware request.", sync_session_ptr->status);
         rtnval = false;
     }
 
@@ -411,8 +411,8 @@ void Camera::feedSyncImages() {
     ros::Rate r(m_fps);
     while (pnode.ok()) {
         ros::Time wait_start_time;
-        ros::Time grab_time;
-        ros::Time pub_time;
+        // ros::Time grab_time;
+        // ros::Time pub_time;
 
         // Send hardware request
         bool send_result = send_hardware_request();
@@ -428,6 +428,7 @@ void Camera::feedSyncImages() {
             fi[devIndex]->imageRequestSingle();
         }
 
+        // grab_time = ros::Time::now();
         if (grab_image_data()) {
             for (auto& item : img_publisher) {
                 const std::string& serial = item.first;
@@ -472,8 +473,8 @@ void Camera::feedSyncImages() {
         sync_session_ptr->status = SyncSession_t::Status::Free;
         sync_session_ptr->locker.unlock();
 
-        pub_time = ros::Time::now();
-        ROS_INFO("Get & pub : %.3f secs", (pub_time - grab_time).toSec());
+        // pub_time = ros::Time::now();
+        // ROS_INFO("Get & pub : %.3f secs", (pub_time - grab_time).toSec());
 
     END_OF_OUT_LOOP:
         r.sleep();
