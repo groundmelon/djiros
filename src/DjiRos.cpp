@@ -25,7 +25,9 @@ DjiRos::DjiRos(ros::NodeHandle& nh)
       ctrl_cmd_wait_timeout_limit(0.0),
       ctrl_cmd_stream_timeout_limit(0.0),
       last_ctrl_stamp(ros::Time(0)),
-      sdk_control_flag(false) {
+      sdk_control_flag(false),
+      m_verbose_output(false),
+      m_hwsync_ack_count(0) {
     std::string serial_name;
     int baud_rate;
     int app_id;
@@ -54,6 +56,7 @@ DjiRos::DjiRos(ros::NodeHandle& nh)
 
     nh.param("ctrl_cmd_stream_timeout", ctrl_cmd_stream_timeout_limit, 0.1);
     nh.param("ctrl_cmd_wait_timeout", ctrl_cmd_wait_timeout_limit, 3.0);
+    nh.param("verbose_output", m_verbose_output, false);
 
     // activation
     user_act_data.ID = app_id;
@@ -154,12 +157,23 @@ void DjiRos::process() {
     ros::Time now_time = ros::Time::now();
 
     {
-        sync_session.locker.lock();
-        if (SyncSession_t::Status::RecvReq == sync_session.status) {
-            sdk.coreAPI->setSyncFreq(sync_session.freq);
-            sync_session.status = SyncSession_t::Status::ForwardReq;
+        // read queue and send request to API
+        ROS_ASSERT(m_hwsync.get());
+        std::lock_guard<std::mutex> lg(m_hwsync->req_mutex);
+
+        while (m_hwsync->req_queue.size()) {  // There are requests in the queue
+            SyncReqInfo sync_req_info = m_hwsync->req_queue.front();
+            m_hwsync->req_queue.pop();
+
+            ROS_ASSERT(sync_req_info.freq >= 0);
+            sdk.coreAPI->setSyncFreq(sync_req_info.freq);
+
+            if (sync_req_info.freq > 0) {
+                // clear counter
+                m_hwsync_ack_count = 0;
+                ROS_INFO("[djiros] Set sync freq to %d hz", sync_req_info.freq);
+            }
         }
-        sync_session.locker.unlock();
     }
 
     if (only_broadcast) {
@@ -439,15 +453,18 @@ void DjiRos::on_broadcast() {
     }
 
     if ((msg_flags & DTFlag.HAS_TIME) && bc_data.timeStamp.syncFlag) {
-        sync_session.locker.lock();
+        ROS_DEBUG("sync:%d #%d @ %d.%d",
+                 bc_data.timeStamp.syncFlag,
+                 m_hwsync_ack_count,
+                 msg_stamp.sec, msg_stamp.nsec);
 
-        ROS_DEBUG("sync:%d @ %.3f", bc_data.timeStamp.syncFlag, msg_stamp.toSec());
+        ROS_ASSERT(m_hwsync.get());
+        {
+            std::lock_guard<std::mutex> lg(m_hwsync->ack_mutex);
+            m_hwsync->ack_queue.emplace(msg_stamp, m_hwsync_ack_count);
+        }
 
-        ASSERT_EQUALITY(sync_session.status, SyncSession_t::Status::ForwardReq);
-        sync_session.header.stamp = msg_stamp;
-        sync_session.status = SyncSession_t::Status::RecvAck;
-
-        sync_session.locker.unlock();
+        m_hwsync_ack_count++;
     }
 }
 

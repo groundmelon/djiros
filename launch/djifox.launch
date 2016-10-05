@@ -1,6 +1,6 @@
 <launch>
-    <node pkg="djiros" type="djifox_node" name="djiros" output="screen" >
-        <param name="serial_name" type="string" value="/dev/ttyUSB0"/>
+    <node pkg="djiros" type="djifox_node" name="djiros" output="screen" launch-prefix="">
+        <param name="serial_name" type="string" value="/dev/ttyUSBA3"/>
         <param name="baud_rate" type="int" value="230400"/>
         <param name="A3_or_M100" type="int" value="0"/>
         <param name="app_id" type="int" value="$(env DJIROS_APPID)"/>
@@ -10,17 +10,19 @@
         <param name="align_with_fmu" type="bool" value="false"/>
         <rosparam>
             # common setting and default individual settings
+            verbose_output: false
             cam_cnt: 1
-            fps:  30
+            fps:  40
             gain: 1.0
-            use_auto_exposure: true
+            use_auto_exposure: false
+            fast_mode: true
 
             # individual setting for camera 0
             camera0:
-                serial: "25001482"
+                serial: "25000681"
                 topic: image
                 use_auto_exposure: false
-                exposure_time_us: 10000
+                exposure_time_us: 5000
                 auto_speed: 0 # 0--1--2, slow--medium--fast converge to desired value
                 gain: 1.0
                 is_slave: true

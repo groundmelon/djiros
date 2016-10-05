@@ -24,7 +24,7 @@ namespace onboardSDK {
 class DjiSdkRosAdapter {
   public:
     typedef DjiSdkRosAdapter This_t;
-    DjiSdkRosAdapter() : is_inited(false), is_terminated(false), activation_result(false) {
+    DjiSdkRosAdapter() : m_is_inited(false), is_terminated(false), activation_result(false) {
         sleep_duration = std::chrono::milliseconds(1);
     }
 
@@ -115,8 +115,8 @@ class DjiSdkRosAdapter {
     }
 
     bool init(std::string device, unsigned int baudrate) {
-        if (is_inited) {
-            return is_inited;
+        if (m_is_inited) {
+            return m_is_inited;
         }
 
         if (!m_hd) {
@@ -130,7 +130,7 @@ class DjiSdkRosAdapter {
         }
 
         if (!m_hd->is_opened()) {
-            return is_inited;
+            return m_is_inited;
         }
 
         coreAPI = std::make_shared<CoreAPI>((HardDriver *)m_hd.get());
@@ -148,8 +148,8 @@ class DjiSdkRosAdapter {
 
         coreAPI->getDroneVersion();
 
-        is_inited = true;
-        return is_inited;
+        m_is_inited = true;
+        return m_is_inited;
     }
 
     void wait_for_ack(bool &ack_flag, std::string tips = std::string()) {
@@ -163,14 +163,14 @@ class DjiSdkRosAdapter {
     }
 
     bool activate(ActivateData *data) {
-        ROS_ASSERT(is_inited);
+        ROS_ASSERT(m_is_inited);
         coreAPI->activate(data, activateCallback, (UserData) this);
         wait_for_ack(activation_ack_flag, "[djiros] Waiting for activation result...");
         return this->activation_result;
     }
 
     void obtain_control(bool b) {
-        ROS_ASSERT(is_inited);
+        ROS_ASSERT(m_is_inited);
         coreAPI->setControl(b, obtainControlCallback, (UserData) this);
         last_obtain_control_flag = b;
     }
@@ -213,7 +213,7 @@ class DjiSdkRosAdapter {
     */
 
     void sendToMobile(uint8_t *data, uint8_t len) {
-        ROS_ASSERT(is_inited);
+        ROS_ASSERT(m_is_inited);
         coreAPI->sendToMobile(data, len, NULL, NULL);
     }
 
@@ -229,9 +229,12 @@ class DjiSdkRosAdapter {
     // WayPoint *waypoint;
     // HotPoint *hotpoint;
     // Follow *followme;
+    bool is_inited() {
+        return m_is_inited;
+    };
 
   private:
-    bool is_inited;
+    bool m_is_inited;
     bool is_terminated;
 
     bool activation_ack_flag;

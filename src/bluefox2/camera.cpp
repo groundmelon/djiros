@@ -4,10 +4,12 @@
 
 namespace bluefox2 {
 
-Camera::Camera(ros::NodeHandle _param_nh) : Camera(_param_nh, nullptr){};
-
-Camera::Camera(ros::NodeHandle _param_nh, SyncSession_t* ssptr)
-    : pnode(_param_nh), sync_session_ptr(ssptr) {
+Camera::Camera(ros::NodeHandle _param_nh)
+    : pnode(_param_nh),
+      m_fast_mode(false),
+      m_hwsync_grab_count(0),
+      m_max_req_number(-1),
+      m_verbose_output(false) {
     int exposure_time_us;
     bool use_color;
     bool use_hdr;
@@ -29,6 +31,8 @@ Camera::Camera(ros::NodeHandle _param_nh, SyncSession_t* ssptr)
     pnode.param("fps", fps, 30.0);
     pnode.param("gain", gain, 0.0);
     pnode.param("is_slave", is_slave, false);
+    pnode.param("fast_mode", m_fast_mode, false);
+    pnode.param("verbose_output", m_verbose_output, false);
 
     pnode.param("cam_cnt", cam_cnt, 1);
 
@@ -112,8 +116,12 @@ Camera::~Camera() {
     ok = false;
 }
 
-bool Camera::isSlaveMode() {
+bool Camera::is_slave_mode() const {
     return m_is_slave_mode;
+}
+
+bool Camera::is_fast_mode() const {
+    return m_fast_mode;
 }
 
 bool Camera::isOK() {
@@ -266,7 +274,7 @@ bool Camera::initSingleMVDevice(unsigned int id, const CameraSetting& cs) {
 }
 
 void Camera::feedImages() {
-    ROS_ASSERT(!isSlaveMode());
+    ROS_ASSERT(!is_slave_mode());
     ros::Rate r(m_fps);
     while (pnode.ok()) {
         send_software_request();
@@ -309,7 +317,7 @@ bool Camera::grab_image_data() {
         const int devIndex = item.second;
         if (!(fi[devIndex]->isRequestNrValid(requestNr[devIndex]))) {
             status = false;
-            ROS_ERROR("Camera %s request timeout.", item.first.c_str());
+            ROS_ERROR("[djiros/cam] Camera %s request timeout.", item.first.c_str());
         }
     }
 
@@ -321,7 +329,7 @@ bool Camera::grab_image_data() {
             ok_cnt += pRequest[devIndex]->isOK();
 
             if (!pRequest[devIndex]->isOK()) {
-                ROS_ERROR("Camera %s request failed.", item.first.c_str());
+                ROS_ERROR("[djiros/cam] Camera %s request failed.", item.first.c_str());
             }
         }
 
@@ -372,7 +380,7 @@ bool Camera::grab_image_data() {
             status = false;
         }
     } else {
-        ROS_ERROR("Timeout request/s.");
+        ROS_ERROR("[djiros/cam] Timeout request/s.");
         // Clear all image received and reset capture
         for (auto& item : ids) {
             const int devIndex = item.second;
@@ -386,98 +394,185 @@ bool Camera::grab_image_data() {
     return status;
 }
 
-bool Camera::send_hardware_request() {
-    bool rtnval = false;
-    sync_session_ptr->locker.lock();
-
-    if (SyncSession_t::Status::Free == sync_session_ptr->status) {
-        sync_session_ptr->freq = 0;  // single request
-        sync_session_ptr->status = SyncSession_t::Status::RecvReq;
-        rtnval = true;
-    } else {
-        ROS_WARN("[djifox] sync status : %d. Not send hardware request.", sync_session_ptr->status);
-        rtnval = false;
-    }
-
-    sync_session_ptr->locker.unlock();
-
-    return rtnval;
+void Camera::send_hardware_request() {
+    m_hwsync->req_queue.push(SyncReqInfo(SyncReqInfo::SingleRequestValue));
 }
 
-void Camera::feedSyncImages() {
-    ROS_ASSERT(isSlaveMode());
-    ROS_ASSERT(sync_session_ptr);
+void Camera::send_driver_request() {
+    // Request images from both cameras
+    for (auto& item : ids) {
+        const int devIndex = item.second;
+        fi[devIndex]->imageRequestSingle();
+    }
+}
+
+bool Camera::wait_for_imu_ack(SyncAckInfo& sync_ack, int& queue_size) {
+    ros::Time wait_start_time = ros::Time::now();
+    while (1) {
+        if (!pnode.ok()) {
+            return false;
+        }
+
+        // Check imu response
+        {
+            std::lock_guard<std::mutex> lg(m_hwsync->ack_mutex);
+            queue_size = m_hwsync->ack_queue.size();
+            if (m_hwsync->ack_queue.size()) {
+                if (m_hwsync->ack_queue.size() == 1) {
+                    // ROS_INFO("ack queue size = %zu", m_hwsync->ack_queue.size());
+                } else {
+                    ROS_ERROR("ack queue size = %zu", m_hwsync->ack_queue.size());
+                    ROS_ERROR("Cannot sync! Image capturing is too slow! Try to decrease fps/exposure or turn off aec!");
+                    ros::shutdown();
+                }
+                // get first and erase it
+                sync_ack = m_hwsync->ack_queue.front();
+                m_hwsync->ack_queue.pop();
+
+                // return the ack
+                break;
+            };
+        }
+
+        // sleep for the while loop
+        ros::Duration(5.0 / 1000.0).sleep();
+
+        ros::Duration dt = ros::Time::now() - wait_start_time;
+        if (dt.toSec() > 1.0) {
+            ROS_WARN_THROTTLE(1.0, "Wait %.3f secs for imu ack", dt.toSec());
+        }
+    }
+
+    return true;
+}
+
+void Camera::process_slow_sync() {
+    ROS_ASSERT(is_slave_mode());
+    ROS_ASSERT(m_hwsync.get());
+
+    send_driver_request();
 
     ros::Rate r(m_fps);
     while (pnode.ok()) {
-        ros::Time wait_start_time;
-        // ros::Time grab_time;
-        // ros::Time pub_time;
+        send_hardware_request();
 
-        // Send hardware request
-        bool send_result = send_hardware_request();
-        ros::Time send_time = ros::Time::now();
-
-        if (!send_result) {
+        // Wait for imu ack
+        SyncAckInfo sync_ack;
+        int queue_size = 0;
+        if (!wait_for_imu_ack(sync_ack, queue_size)) {
             goto END_OF_OUT_LOOP;
         }
 
-        // Request images from both cameras
-        for (auto& item : ids) {
-            const int devIndex = item.second;
-            fi[devIndex]->imageRequestSingle();
-        }
+        // Imu ack received, verify it
+        ROS_ASSERT(sync_ack.seq >= 0);
 
-        // grab_time = ros::Time::now();
+        // Get image from driver
         if (grab_image_data()) {
+            ROS_INFO_COND(m_verbose_output, "Grab data with seq[%d]", sync_ack.seq);
+
             for (auto& item : img_publisher) {
                 const std::string& serial = item.first;
 
-                sync_session_ptr->locker.lock();
-                capture_time = sync_session_ptr->header.stamp;
-                sync_session_ptr->locker.unlock();
-                
-                // After artificial calibrated, we found that actually image is taken one imu later than triggered
-                img_buffer.at(serial).header.stamp = capture_time + ros::Duration(0.01);
+                capture_time = ros::Time(sync_ack.stamp);
+
+                img_buffer.at(serial).header.stamp = capture_time;
                 item.second.publish(img_buffer.at(serial));
             }
         }
-
-        wait_start_time = ros::Time::now();
-        while (1) {
-            if (!pnode.ok()) {
-                break;
-            }
-            // Check imu response
-            sync_session_ptr->locker.lock();
-
-            bool condition_satisfied = (SyncSession_t::Status::RecvAck == sync_session_ptr->status);
-
-            sync_session_ptr->locker.unlock();
-
-            if (condition_satisfied) {
-                break;
-            } else {
-                ros::Duration(5.0 / 1000.0).sleep();
-            }
-
-            ros::Duration dt = ros::Time::now() - wait_start_time;
-            if (dt.toSec() > 1.0) {
-                ROS_WARN_THROTTLE(1.0, "Wait %.3f secs for imu ack", dt.toSec());
-            }
-        }
-
-        // Imu ack received, reset it
-        sync_session_ptr->locker.lock();
-        capture_time = sync_session_ptr->header.stamp;
-        sync_session_ptr->status = SyncSession_t::Status::Free;
-        sync_session_ptr->locker.unlock();
-
-        // pub_time = ros::Time::now();
-        // ROS_INFO("Get & pub : %.3f secs", (pub_time - grab_time).toSec());
+        m_hwsync_grab_count++;  // inc it whether grab success or failed.
+        send_driver_request();
 
     END_OF_OUT_LOOP:
+        // r.sleep();
+
+        if (m_max_req_number > 0 && m_hwsync_grab_count >= m_max_req_number) {
+            break;
+        }
+    }
+}
+
+void Camera::process_fast_sync() {
+    ROS_ASSERT(is_slave_mode());
+    ROS_ASSERT(is_fast_mode());
+    ROS_ASSERT(m_hwsync.get());
+    const int TRAIL_CNT = 5;
+    ros::Time tm1, tm2;
+    bool grab_result;
+
+    ROS_INFO("[djiros/cam] Process several one-shot requests...");
+
+    this->m_max_req_number = TRAIL_CNT;
+    this->process_slow_sync();
+
+    ROS_INFO("[djiros/cam] Clear buffers... (There may be request timeout)");
+
+    for (size_t i = 0; i < 1; ++i) {
+        grab_image_data();
+        ros::Duration(1.0 / m_fps).sleep();
+    }
+
+    ROS_INFO("[djiros/cam] Start continuous requests");
+
+    {
+        std::lock_guard<std::mutex> lg(m_hwsync->req_mutex);
+        m_hwsync->req_queue.push(SyncReqInfo(static_cast<int>(m_fps)));
+    }
+    m_hwsync_grab_count = 0;
+    
+    send_driver_request();
+
+    ros::Rate r(2000.0);
+    while (pnode.ok()) {
+        // Wait for imu ack
+        SyncAckInfo sync_ack;
+        int queue_size = 0;
+        if (!wait_for_imu_ack(sync_ack, queue_size)) {
+            ROS_ERROR("Wait failed.");
+            goto END_OF_OUT_LOOP;
+        }
+        // Imu ack received, verify it
+        ROS_ASSERT(sync_ack.seq >= 0);
+
+        // Get image from driver
+        tm1 = ros::Time::now();
+        grab_result = grab_image_data();
+        tm2 = ros::Time::now();
+        ROS_INFO_COND(m_verbose_output, "grab time %.3f", (tm2 - tm1).toSec());
+
+        ROS_INFO_COND(m_verbose_output,
+                      "Try grabing data with imu_seq[%d] grab_seq[%d]",
+                      sync_ack.seq,
+                      m_hwsync_grab_count);
+
+        if (grab_result) {
+            for (auto& item : img_publisher) {
+                const std::string& serial = item.first;
+
+                capture_time = sync_ack.stamp;
+
+                // After artificial calibrated, we found that actually image is taken one imu later
+                // than triggered
+                img_buffer.at(serial).header.stamp = capture_time;
+                item.second.publish(img_buffer.at(serial));
+            }
+        }
+        m_hwsync_grab_count++;  // inc it whether grab success or failed.
+        tm1 = ros::Time::now();
+        // if (queue_size > 0 && queue_size < 4) {
+            // for(size_t k = 0; k < static_cast<size_t>(queue_size); ++k) {
+                send_driver_request();
+            // }
+        // } else {
+            // ROS_ERROR("[djiros/cam] queue_size = %d", queue_size);
+        // }
+        tm2 = ros::Time::now();
+    // ROS_INFO("driver time %.3f", (tm2-tm1).toSec());
+
+    END_OF_OUT_LOOP:
+        // tm1 = ros::Time::now();
         r.sleep();
+        // tm2 = ros::Time::now();
+        // ROS_INFO("sleep time %.3f", (tm2-tm1).toSec());
     }
 }
 

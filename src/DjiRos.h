@@ -251,6 +251,7 @@ class DjiRos {
     ros::Time last_ctrl_stamp;
     ros::Time wait_start_stamp;
     bool sdk_control_flag;
+    bool m_verbose_output;
 
     void obtain_control(bool b);
     void on_control(int event);
@@ -262,7 +263,9 @@ class DjiRos {
     void gimbal_speed_control_callback(const geometry_msgs::TwistStampedConstPtr& pMsg);
 
 public:
-    SyncSession_t sync_session;
+    std::shared_ptr<HardwareSynchronizer> m_hwsync;
+private:
+    int m_hwsync_ack_count;
 
 };
 

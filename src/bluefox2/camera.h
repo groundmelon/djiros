@@ -8,7 +8,7 @@
 #include <mvIMPACT_CPP/mvIMPACT_acquire.h>
 #include <errno.h>
 #include <dynamic_reconfigure/server.h>
-#include <bluefox2/on_offConfig.h>
+#include <djiros/djifoxConfig.h>
 #include <unordered_map>
 
 #include "../HardwareSync.h"
@@ -42,11 +42,11 @@ class Camera
     static constexpr int MAX_CAM_CNT = 10;
 
     Camera(ros::NodeHandle param_nh);
-    Camera(ros::NodeHandle _param_nh, SyncSession_t* ssptr);
     ~Camera();
     bool isOK();
     void feedImages();
-    bool isSlaveMode();
+    bool is_slave_mode() const;
+    bool is_fast_mode() const;
 
   private:
     // Node handle
@@ -68,6 +68,7 @@ class Camera
     ros::Time capture_time;
     unsigned int devCnt;
     bool m_is_slave_mode;
+    bool m_fast_mode;
 
     // User specified parameters
     int cam_cnt;
@@ -82,10 +83,18 @@ class Camera
 
     // Hardware sync related
 public:
-    SyncSession_t* sync_session_ptr;
-    void feedSyncImages();
+    std::shared_ptr<HardwareSynchronizer> m_hwsync;
+    void process_slow_sync();
+    void process_fast_sync();
+    void dynamic_reconfigure_callback(djiros::djifoxConfig& config, uint32_t level);
 private:
-    bool send_hardware_request();
+    void send_hardware_request();
+    void send_driver_request();
+    bool wait_for_imu_ack(SyncAckInfo& sync_ack, int& queue_size);
+    int m_hwsync_grab_count;
+    int m_max_req_number;
+    double m_fast_stamp_offset;
+    bool m_verbose_output;
 };
 
 }

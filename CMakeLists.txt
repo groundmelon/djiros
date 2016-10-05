@@ -14,7 +14,7 @@ else()
         message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
-set(ADDITIONAL_CXX_FLAG "-Wall -O3")
+set(ADDITIONAL_CXX_FLAG "-Wall -O3 -g")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ADDITIONAL_CXX_FLAG}")
 
 
@@ -127,14 +127,12 @@ target_link_libraries(djiros_node
 )
 
 if (ENABLE_DJIFOX)
-
   add_executable(djifox_node
     src/djifox_node.cpp
     src/bluefox2/camera.cpp
     src/DjiRos.cpp
     ${DJI_SDK_LIB_SOURCES}
   )
-
   target_link_libraries(djifox_node
      ${catkin_LIBRARIES}
      ${mvIMPACT_LIBRARIES}
