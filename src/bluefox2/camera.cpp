@@ -521,7 +521,7 @@ void Camera::process_fast_sync() {
     
     send_driver_request();
 
-    ros::Rate r(2000.0);
+    ros::Rate r(200.0);
     while (pnode.ok()) {
         // Wait for imu ack
         SyncAckInfo sync_ack;
