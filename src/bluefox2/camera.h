@@ -8,7 +8,6 @@
 #include <mvIMPACT_CPP/mvIMPACT_acquire.h>
 #include <errno.h>
 #include <dynamic_reconfigure/server.h>
-#include <djiros/djifoxConfig.h>
 #include <unordered_map>
 
 #include "../HardwareSync.h"
@@ -86,7 +85,6 @@ public:
     std::shared_ptr<HardwareSynchronizer> m_hwsync;
     void process_slow_sync();
     void process_fast_sync();
-    void dynamic_reconfigure_callback(djiros::djifoxConfig& config, uint32_t level);
 private:
     void send_hardware_request();
     void send_driver_request();
