@@ -10,6 +10,8 @@ import random
 VERT_THRUST = 1.0
 VERT_VELO = -1.0
 GEAR_SHIFT_VALUE = -0.6
+ROLL_PITCH_SCALE = 30.0
+YAW_SCALE = 10.0
 
 
 class ThrustTest:
@@ -43,6 +45,10 @@ class ThrustTest:
         eulers = tfs.euler_from_quaternion(self.w_q_b, 'rzyx')
         yaw = eulers[0]
 
+        des_roll = self.rc_data['roll'] * ROLL_PITCH_SCALE
+        des_pitch = -self.rc_data['pitch'] * ROLL_PITCH_SCALE
+        des_yaw = -yaw + self.rc_data['yaw'] * YAW_SCALE
+
         # normalized to 0 ~ 1
         thr_from_rc = (self.rc_data['thrust'] + 1.0) / 2.0
         # map to 10~100
@@ -59,9 +65,9 @@ class ThrustTest:
         joy_msg = Joy()
         joy_msg.header.stamp = rospy.Time.now()
         joy_msg.header.frame_id = "FRD"
-        joy_msg.axes = [random.random()/100.0, random.random()/100.0, self.des_thrust, -math.degrees(yaw), VERT_THRUST]
+        joy_msg.axes = [des_roll, des_pitch, self.des_thrust,
+                        des_yaw, VERT_THRUST]
         self.ctrl_pub.publish(joy_msg)
-
 
 if __name__ == "__main__":
     rospy.init_node('thrust_test')
