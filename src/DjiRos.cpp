@@ -428,7 +428,9 @@ void DjiRos::on_broadcast() {
 
         rc_msg.buttons.push_back(static_cast<int>(bc_data.status));
         rc_msg.buttons.push_back(static_cast<int>(bc_data.battery));
+        rc_msg.buttons.push_back(static_cast<int>(bc_data.ctrlInfo.mode));
         rc_msg.buttons.push_back(static_cast<int>(bc_data.ctrlInfo.deviceStatus));
+        rc_msg.buttons.push_back(static_cast<int>(bc_data.ctrlInfo.flightStatus));
 
         pub_rc.publish(rc_msg);
 
@@ -517,7 +519,9 @@ void DjiRos::control_callback(const sensor_msgs::JoyConstPtr& pMsg) {
         flight_ctrl_data.yaw = pMsg->axes[3];
         if (pMsg->axes[4] > 0) {
             flight_ctrl_data.flag = 0b00100010;  // 0b00100000, mode 13
-            // user_ctrl_data.ctrl_flag = 0b00101010; // 0b00100000, mode 14
+            if (pMsg->axes.size()>5 && pMsg->axes.at(5)>0.5) {
+                flight_ctrl_data.flag = 0b00101010; // 0b00100000, mode 14
+            }
         } else {
             flight_ctrl_data.flag = 0b00000010;  // 0b00000000, mode 1
         }

@@ -11,8 +11,8 @@ VERT_THRUST = 1.0
 VERT_VELO = -1.0
 GEAR_SHIFT_VALUE = -0.6
 ROLL_PITCH_SCALE = 30.0
-YAW_SCALE = 10.0
-
+YAW_SCALE = 60.0
+YAW_MODE_RATE = 1.0
 
 def angle_add(a,b):
     y = a + b
@@ -29,6 +29,7 @@ class ThrustTest:
         self.rc_data = None
         self.des_thrust = 30.0
         self.ctrl_pub = None
+        self.yaw = None
 
     def rc_callback(self, msg):
         self.rc_data = dict(roll=msg.axes[0],
@@ -55,7 +56,9 @@ class ThrustTest:
 
         des_roll = self.rc_data['roll'] * ROLL_PITCH_SCALE
         des_pitch = -self.rc_data['pitch'] * ROLL_PITCH_SCALE
-        des_yaw = angle_add(-yaw, self.rc_data['yaw'] * YAW_SCALE)
+        des_yawrate = self.rc_data['yaw'] * YAW_SCALE
+        if (abs(des_yawrate) < 1.0):
+            des_yawrate = 0.0
 
         # normalized to 0 ~ 1
         thr_from_rc = (self.rc_data['thrust'] + 1.0) / 2.0
@@ -67,14 +70,14 @@ class ThrustTest:
         else:
             self.des_thrust = thr_from_rc
 
-        rospy.loginfo("rc[{:.2f}] rcmap[{: 3.0f}] ctrl[{: 3.0f}] yaw[{:.2f}->{:.2f}]".format(
-            self.rc_data['thrust'], thr_from_rc, self.des_thrust, -yaw, des_yaw))
+        rospy.loginfo("rc[{:.2f}] rcmap[{: 3.0f}] ctrl[{: 3.0f}] yawrate[{:.2f}]".format(
+            self.rc_data['thrust'], thr_from_rc, self.des_thrust,des_yawrate))
 
         joy_msg = Joy()
         joy_msg.header.stamp = rospy.Time.now()
         joy_msg.header.frame_id = "FRD"
         joy_msg.axes = [des_roll, des_pitch, self.des_thrust,
-                        math.degrees(des_yaw), VERT_THRUST]
+                        des_yawrate, VERT_THRUST, YAW_MODE_RATE]
         self.ctrl_pub.publish(joy_msg)
 
 if __name__ == "__main__":
