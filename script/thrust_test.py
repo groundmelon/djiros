@@ -59,14 +59,14 @@ class ThrustTest:
         else:
             self.des_thrust = thr_from_rc
 
-        rospy.loginfo("rc[{:.2f}] rcmap[{: 3.0f}] ctrl[{: 3.0f}]".format(
-            self.rc_data['thrust'], thr_from_rc, self.des_thrust))
+        rospy.loginfo("rc[{:.2f}] rcmap[{: 3.0f}] ctrl[{: 3.0f}] yaw[{:.2f}->{:.2f}]".format(
+            self.rc_data['thrust'], thr_from_rc, self.des_thrust, -yaw, des_yaw))
 
         joy_msg = Joy()
         joy_msg.header.stamp = rospy.Time.now()
         joy_msg.header.frame_id = "FRD"
         joy_msg.axes = [des_roll, des_pitch, self.des_thrust,
-                        des_yaw, VERT_THRUST]
+                        math.degrees(des_yaw), VERT_THRUST]
         self.ctrl_pub.publish(joy_msg)
 
 if __name__ == "__main__":
