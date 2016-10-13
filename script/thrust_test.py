@@ -14,12 +14,20 @@ ROLL_PITCH_SCALE = 30.0
 YAW_SCALE = 10.0
 
 
+def angle_add(a,b):
+    y = a + b
+    if (y > math.pi):
+        y -= math.pi * 2
+    if (y < -math.pi):
+        y += math.pi * 2
+    return y
+
 class ThrustTest:
 
     def __init__(self):
         self.w_q_b = None
         self.rc_data = None
-        self.des_thrust = 10.0
+        self.des_thrust = 30.0
         self.ctrl_pub = None
 
     def rc_callback(self, msg):
@@ -47,7 +55,7 @@ class ThrustTest:
 
         des_roll = self.rc_data['roll'] * ROLL_PITCH_SCALE
         des_pitch = -self.rc_data['pitch'] * ROLL_PITCH_SCALE
-        des_yaw = -yaw + self.rc_data['yaw'] * YAW_SCALE
+        des_yaw = angle_add(-yaw, self.rc_data['yaw'] * YAW_SCALE)
 
         # normalized to 0 ~ 1
         thr_from_rc = (self.rc_data['thrust'] + 1.0) / 2.0
