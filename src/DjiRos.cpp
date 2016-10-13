@@ -159,9 +159,9 @@ DjiRos::~DjiRos() {
 void DjiRos::process() {
     ros::Time now_time = ros::Time::now();
 
+    if(m_hwsync.get())
     {
         // read queue and send request to API
-        ROS_ASSERT(m_hwsync.get());
         std::lock_guard<std::mutex> lg(m_hwsync->req_mutex);
 
         while (m_hwsync->req_queue.size()) {  // There are requests in the queue
@@ -432,7 +432,7 @@ void DjiRos::on_broadcast() {
 
         pub_rc.publish(rc_msg);
 
-        api_trigger.setValue(bc_data.rc.mode);
+        api_trigger.setValue(-bc_data.rc.mode);
     }
 
     if ((msg_flags & DTFlag.HAS_GMBL)) {
@@ -461,7 +461,7 @@ void DjiRos::on_broadcast() {
                  m_hwsync_ack_count,
                  msg_stamp.sec, msg_stamp.nsec);
 
-        ROS_ASSERT(m_hwsync.get());
+        if(m_hwsync.get())
         {
             std::lock_guard<std::mutex> lg(m_hwsync->ack_mutex);
             m_hwsync->ack_queue.emplace(msg_stamp, m_hwsync_ack_count);

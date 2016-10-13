@@ -5,6 +5,7 @@ from sensor_msgs.msg import Imu, Joy
 import numpy as np
 from tf import transformations as tfs
 import math
+import random
 
 VERT_THRUST = 1.0
 VERT_VELO = -1.0
@@ -58,7 +59,8 @@ class ThrustTest:
         joy_msg = Joy()
         joy_msg.header.stamp = rospy.Time.now()
         joy_msg.header.frame_id = "FRD"
-        joy_msg.axes = [0, 0, self.des_thrust, -math.degrees(yaw), VERT_THRUST]
+        joy_msg.axes = [random.random()/100.0, random.random()/100.0, self.des_thrust, -math.degrees(yaw), VERT_THRUST]
+        self.ctrl_pub.publish(joy_msg)
 
 
 if __name__ == "__main__":
