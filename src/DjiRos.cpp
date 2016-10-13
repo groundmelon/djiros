@@ -93,6 +93,9 @@ DjiRos::DjiRos(ros::NodeHandle& nh)
         throw std::runtime_error(prompt.c_str());
     }
 
+    if (!A3_or_M100) {
+        sdk.coreAPI->setVersion(DJI::onboardSDK::versionA3_31);
+    }
     // ros related initialization
     ros_R_fc << 1, 0, 0, 0, -1, 0, 0, 0, -1;
 
@@ -420,8 +423,8 @@ void DjiRos::on_broadcast() {
         rc_msg.axes.push_back(static_cast<float>(bc_data.rc.pitch / 10000.0));
         rc_msg.axes.push_back(static_cast<float>(bc_data.rc.yaw / 10000.0));
         rc_msg.axes.push_back(static_cast<float>(bc_data.rc.throttle / 10000.0));
-        rc_msg.axes.push_back(static_cast<float>(bc_data.rc.mode / 10000.0));
-        rc_msg.axes.push_back(static_cast<float>(bc_data.rc.gear / 10000.0));
+        rc_msg.axes.push_back(static_cast<float>(-bc_data.rc.mode / 10000.0));
+        rc_msg.axes.push_back(static_cast<float>((-bc_data.rc.gear-15000) / 10000.0));
 
         rc_msg.buttons.push_back(static_cast<int>(bc_data.status));
         rc_msg.buttons.push_back(static_cast<int>(bc_data.battery));
