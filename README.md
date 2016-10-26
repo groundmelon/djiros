@@ -22,6 +22,6 @@ This is a modified version of Onboard-SDK-ROS, which uses standard ros message t
 * ctrl_cmd_wait_timeout   [double] : timeout for waiting for control command after switch into api mode
 
 #### Topics ###
-* See the code and [official documents](https://github.com/dji-sdk/Onboard-SDK/doc) for published topics and their details.
+* See the code and [official documents](https://developer.dji.com/onboard-sdk/documentation/) for published topics and their details.
 * Subscriber "~ctrl" for control the drone
 * Subscriber "~gimbal_ctrl" and "~gimbal_speed_ctrl" for control the gimbal
