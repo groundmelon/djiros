@@ -1,7 +1,7 @@
 <launch>
     <node pkg="djiros" type="djifox_node" name="djiros" output="screen" launch-prefix="">
         <param name="serial_name" type="string" value="/dev/ttyUSBA3"/>
-        <param name="baud_rate" type="int" value="230400"/>
+        <param name="baud_rate" type="int" value="921600"/>
         <param name="A3_or_M100" type="int" value="0"/>
         <param name="app_id" type="int" value="$(env DJIROS_APPID)"/>
         <param name="app_version" type="int" value="1"/>
