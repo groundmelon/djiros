@@ -6,7 +6,12 @@ This is a modified version of Onboard-SDK-ROS, which uses standard ros message t
 
 * Modify **CMakeLists.txt** to add Eigen3 to the include directories. It depends on which version of Eigen your are using ( from apt-get, manually installed or other situation)
 
+* If you don't need mvBlueFOX synchronization, just [set ENABLE_DJIFOX to false](https://github.com/groundmelon/djiros/blob/A3/CMakeLists.txt#L22) to eliminate compile errors about mvBlueFOX drivers.
+
 * **launch/djiros.launch** will use environment variables to get APPID and ENCKEY. You can add your id and key in your launch file / set it to the environment / hardcode it in the source code.
+
+* Configure A3 SDK as below
+  ![A3 Configuration](docs/configuration.png)
 
 ### ROS Interfaces ###
 
