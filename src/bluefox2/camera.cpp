@@ -93,6 +93,7 @@ Camera::Camera(ros::NodeHandle _param_nh)
     // Init cameras
     ok = true;
     for (auto& item : camSettings) {
+        bool current_camera_inited = false;
         CameraSetting& cs = item.second;
         for (unsigned int k = 0; k < devCnt; k++) {
             if (devMgr[k]->serial.read() == cs.serial) {
@@ -101,8 +102,13 @@ Camera::Camera(ros::NodeHandle _param_nh)
                     ok = false;
                     ROS_ERROR("Camera %s Init Failed.", cs.serial.c_str());
                     break;
+                } else {
+                    current_camera_inited = true;
                 }
             }
+        }
+        if (!current_camera_inited) {
+            ROS_ASSERT_MSG(false, "Camera %s not found!!!", cs.serial.c_str());
         }
     }
 }
