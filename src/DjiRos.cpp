@@ -28,6 +28,19 @@ DjiRos::DjiRos(ros::NodeHandle& nh)
       sdk_control_flag(false),
       m_verbose_output(false),
       m_hwsync_ack_count(0) {
+    
+    std::string log_level_str;
+    nh.param("log_level", log_level_str, std::string("info"));
+    if ("debug" == log_level_str) {
+        ROS_INFO("set to info");
+        ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug);
+    } else if ("info" == log_level_str) {
+        ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
+    } else {
+        ROS_ERROR("Only support log_level_str in (\"debug\",\"info\"), using debug as default");
+        ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug);
+    }
+    
     std::string serial_name;
     int baud_rate;
     int app_id;
@@ -449,16 +462,23 @@ void DjiRos::on_broadcast() {
     }
 
     if ((msg_flags & DTFlag.HAS_TIME)) {
+        static ros::Time last_time_ref(0.0);
+        
         sensor_msgs::TimeReference tmr_msg;
         tmr_msg.header.stamp = msg_stamp;
         tmr_msg.time_ref = ros::Time(static_cast<double>(bc_data.timeStamp.time));
         tmr_msg.source = std::string("from fmu, 400 ticks/sec");
-
         pub_time_ref.publish(tmr_msg);
+        
+        ROS_DEBUG("stamp dt = %.3f, tick=%d", 
+                 (tmr_msg.time_ref - last_time_ref).toSec(), 
+                 bc_data.timeStamp.time);
+        last_time_ref = tmr_msg.time_ref;
+
     }
 
     if ((msg_flags & DTFlag.HAS_TIME) && bc_data.timeStamp.syncFlag) {
-        ROS_DEBUG("sync:%d #%d @ %d.%d",
+        ROS_DEBUG("sdk recv sync:%d #%d @ %d.%d",
                  bc_data.timeStamp.syncFlag,
                  m_hwsync_ack_count,
                  msg_stamp.sec, msg_stamp.nsec);

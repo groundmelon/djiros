@@ -1,5 +1,6 @@
 <launch>
     <node pkg="djiros" type="djifox_node" name="djiros" output="screen" launch-prefix="">
+        <param name="log_level" type="string" value="info"/>
         <param name="serial_name" type="string" value="/dev/ttyUSB0"/>
         <param name="baud_rate" type="int" value="921600"/>
         <param name="A3_or_M100" type="int" value="0"/>
