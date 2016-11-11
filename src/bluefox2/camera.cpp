@@ -412,6 +412,15 @@ void Camera::send_driver_request() {
     }
 }
 
+void Camera::reset_driver_request() {
+    // Request images from both cameras
+    for (auto& item : ids) {
+        const int devIndex = item.second;
+        fi[devIndex]->imageRequestReset(0, 0);
+    }
+}
+
+
 bool Camera::wait_for_imu_ack(SyncAckInfo& sync_ack, int& queue_size) {
     ros::Time wait_start_time = ros::Time::now();
     while (1) {
@@ -444,8 +453,11 @@ bool Camera::wait_for_imu_ack(SyncAckInfo& sync_ack, int& queue_size) {
         ros::Duration(5.0 / 1000.0).sleep();
 
         ros::Duration dt = ros::Time::now() - wait_start_time;
-        if (dt.toSec() > 1.0) {
+
+        // Timeout set as two times longer than normal interval
+        if (dt.toSec() > (1.0 / m_fps * 2)) {
             ROS_WARN_THROTTLE(1.0, "Wait %.3f secs for imu ack", dt.toSec());
+            return false;
         }
     }
 
@@ -466,6 +478,8 @@ void Camera::process_slow_sync() {
         SyncAckInfo sync_ack;
         int queue_size = 0;
         if (!wait_for_imu_ack(sync_ack, queue_size)) {
+            reset_driver_request();
+            ROS_ERROR("reset all driver requests!");
             goto END_OF_OUT_LOOP;
         }
 

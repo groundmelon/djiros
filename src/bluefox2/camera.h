@@ -87,6 +87,7 @@ public:
     void process_fast_sync();
 private:
     void send_hardware_request();
+    void reset_driver_request();
     void send_driver_request();
     bool wait_for_imu_ack(SyncAckInfo& sync_ack, int& queue_size);
     int m_hwsync_grab_count;

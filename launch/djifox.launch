@@ -1,6 +1,6 @@
 <launch>
     <node pkg="djiros" type="djifox_node" name="djiros" output="screen" launch-prefix="">
-        <param name="serial_name" type="string" value="/dev/ttyUSBA3"/>
+        <param name="serial_name" type="string" value="/dev/ttyUSB0"/>
         <param name="baud_rate" type="int" value="921600"/>
         <param name="A3_or_M100" type="int" value="0"/>
         <param name="app_id" type="int" value="$(env DJIROS_APPID)"/>
@@ -19,7 +19,7 @@
 
             # individual setting for camera 0
             camera0:
-                serial: "25000681"
+                serial: "25000049"
                 topic: image
                 use_auto_exposure: false
                 exposure_time_us: 10000
