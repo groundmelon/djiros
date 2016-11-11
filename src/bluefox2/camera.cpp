@@ -489,6 +489,8 @@ void Camera::process_slow_sync() {
         // Get image from driver
         if (grab_image_data()) {
             ROS_INFO_COND(m_verbose_output, "Grab data with seq[%d]", sync_ack.seq);
+            ROS_ASSERT_MSG(sync_ack.seq == m_hwsync_grab_count, "sync_ack.seq=%d, hwsync_grab_count=%d", 
+                    sync_ack.seq, m_hwsync_grab_count);
 
             for (auto& item : img_publisher) {
                 const std::string& serial = item.first;
