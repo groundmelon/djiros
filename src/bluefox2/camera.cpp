@@ -489,7 +489,7 @@ void Camera::process_slow_sync() {
         send_driver_request();
 
     END_OF_OUT_LOOP:
-        // r.sleep();
+        r.sleep();
 
         if (m_max_req_number > 0 && m_hwsync_grab_count >= m_max_req_number) {
             break;
