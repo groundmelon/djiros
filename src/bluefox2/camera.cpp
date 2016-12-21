@@ -215,7 +215,7 @@ bool Camera::initSingleMVDevice(unsigned int id, const CameraSetting& cs) {
             cs.aec_desired_gray_value);
         settings.cameraSetting.autoControlParameters.controllerDelay_Images.write(
             cs.aec_control_delay_frame);
-        settings.cameraSetting.autoControlParameters.exposeLowerLimit_us.write(50);
+        settings.cameraSetting.autoControlParameters.exposeLowerLimit_us.write(12);
         settings.cameraSetting.autoControlParameters.exposeUpperLimit_us.write(cs.exposure_time_us);
         settings.cameraSetting.autoExposeControl.write(aecOn);
         ROS_INFO("Auto Exposure w/ Max Exposure Time (us) :  %d . Desired Grey Value: %d",
