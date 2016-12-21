@@ -17,6 +17,8 @@
             gain: 1.0
             use_auto_exposure: false
             fast_mode: false
+            aec_desired_gray_value: 60 # desired overall gray value for the image
+            aec_control_delay_frame: 1 # larger values cause slower convergence
 
             # individual setting for camera 0
             camera0:
@@ -24,6 +26,8 @@
                 topic: image
                 use_auto_exposure: false
                 exposure_time_us: 10000
+                # aec_desired_gray_value: 60
+                # aec_control_delay_frame: 1
                 auto_speed: 0 # 0--1--2, slow--medium--fast converge to desired value
                 gain: 1.0
                 is_slave: true

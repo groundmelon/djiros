@@ -21,11 +21,16 @@ Camera::Camera(ros::NodeHandle _param_nh)
     double gain;
     bool is_slave;
 
+    int aec_desired_gray_value;
+    int aec_control_delay_frame;
+
     pnode.param("use_color", use_color, false);
     pnode.param("use_hdr", use_hdr, true);
     pnode.param("has_hdr", has_hdr, true);
     pnode.param("use_binning", use_binning, false);
     pnode.param("use_auto_exposure", use_auto_exposure, false);
+    pnode.param("aec_desired_gray_value", aec_desired_gray_value, 100);
+    pnode.param("aec_control_delay_frame", aec_control_delay_frame, 0);
     pnode.param("exposure_time_us", exposure_time_us, 10000);
     pnode.param("auto_speed", auto_speed, 0);
     pnode.param("fps", fps, 30.0);
@@ -53,6 +58,11 @@ Camera::Camera(ros::NodeHandle _param_nh)
         pnode.param(prefix + "has_hdr", cs.has_hdr, has_hdr);
         pnode.param(prefix + "use_binning", cs.use_binning, use_binning);
         pnode.param(prefix + "use_auto_exposure", cs.use_auto_exposure, use_auto_exposure);
+        pnode.param(
+            prefix + "aec_desired_gray_value", cs.aec_desired_gray_value, aec_desired_gray_value);
+        pnode.param(prefix + "aec_control_delay_frame",
+                    cs.aec_control_delay_frame,
+                    aec_control_delay_frame);
         pnode.param(prefix + "exposure_time_us", cs.exposure_time_us, exposure_time_us);
         pnode.param(prefix + "auto_speed", cs.auto_speed, auto_speed);
         pnode.param(prefix + "gain", cs.gain, gain);
@@ -201,8 +211,10 @@ bool Camera::initSingleMVDevice(unsigned int id, const CameraSetting& cs) {
             acsSlow, acsMedium, acsFast, acsUserDefined};
         settings.cameraSetting.autoControlParameters.controllerSpeed.write(
             tacSpeedTable.at(cs.auto_speed));
-        settings.cameraSetting.autoControlParameters.desiredAverageGreyValue.write(100);
-        settings.cameraSetting.autoControlParameters.controllerDelay_Images.write(0);
+        settings.cameraSetting.autoControlParameters.desiredAverageGreyValue.write(
+            cs.aec_desired_gray_value);
+        settings.cameraSetting.autoControlParameters.controllerDelay_Images.write(
+            cs.aec_control_delay_frame);
         settings.cameraSetting.autoControlParameters.exposeLowerLimit_us.write(50);
         settings.cameraSetting.autoControlParameters.exposeUpperLimit_us.write(cs.exposure_time_us);
         settings.cameraSetting.autoExposeControl.write(aecOn);
@@ -420,7 +432,6 @@ void Camera::reset_driver_request() {
     }
 }
 
-
 bool Camera::wait_for_imu_ack(SyncAckInfo& sync_ack, int& queue_size) {
     ros::Time wait_start_time = ros::Time::now();
     while (1) {
@@ -437,7 +448,9 @@ bool Camera::wait_for_imu_ack(SyncAckInfo& sync_ack, int& queue_size) {
                     // ROS_INFO("ack queue size = %zu", m_hwsync->ack_queue.size());
                 } else {
                     ROS_ERROR("ack queue size = %zu", m_hwsync->ack_queue.size());
-                    ROS_ERROR("Cannot sync! Image capturing is too slow! Try to decrease fps/exposure or turn off aec!");
+                    ROS_ERROR(
+                        "Cannot sync! Image capturing is too slow! Try to decrease fps/exposure or "
+                        "turn off aec!");
                     ros::shutdown();
                 }
                 // get first and erase it
@@ -489,8 +502,10 @@ void Camera::process_slow_sync() {
         // Get image from driver
         if (grab_image_data()) {
             ROS_INFO_COND(m_verbose_output, "Grab data with seq[%d]", sync_ack.seq);
-            ROS_ASSERT_MSG(sync_ack.seq == m_hwsync_grab_count, "sync_ack.seq=%d, hwsync_grab_count=%d", 
-                    sync_ack.seq, m_hwsync_grab_count);
+            ROS_ASSERT_MSG(sync_ack.seq == m_hwsync_grab_count,
+                           "sync_ack.seq=%d, hwsync_grab_count=%d",
+                           sync_ack.seq,
+                           m_hwsync_grab_count);
 
             for (auto& item : img_publisher) {
                 const std::string& serial = item.first;
@@ -540,7 +555,7 @@ void Camera::process_fast_sync() {
         m_hwsync->req_queue.push(SyncReqInfo(static_cast<int>(m_fps)));
     }
     m_hwsync_grab_count = 0;
-    
+
     send_driver_request();
 
     ros::Rate r(200.0);
@@ -581,11 +596,11 @@ void Camera::process_fast_sync() {
         m_hwsync_grab_count++;  // inc it whether grab success or failed.
         tm1 = ros::Time::now();
         // if (queue_size > 0 && queue_size < 4) {
-            // for(size_t k = 0; k < static_cast<size_t>(queue_size); ++k) {
-                send_driver_request();
-            // }
+        // for(size_t k = 0; k < static_cast<size_t>(queue_size); ++k) {
+        send_driver_request();
+        // }
         // } else {
-            // ROS_ERROR("[djiros/cam] queue_size = %d", queue_size);
+        // ROS_ERROR("[djiros/cam] queue_size = %d", queue_size);
         // }
         tm2 = ros::Time::now();
     // ROS_INFO("driver time %.3f", (tm2-tm1).toSec());

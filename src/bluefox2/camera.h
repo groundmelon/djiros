@@ -28,6 +28,8 @@ struct CameraSetting {
 
     int exposure_time_us;
     int auto_speed;
+    int aec_desired_gray_value;
+    int aec_control_delay_frame;
     
     double fps;
     double gain;
