@@ -13,7 +13,7 @@ This is a modified version of Onboard-SDK-ROS, which uses standard ros message t
 * Configure A3 SDK as below
   ![A3 Configuration](docs/configuration.png)
 
-* Please pay attention to ttyUSB name and privilege. An example udev-rule file is provided in [docs/99-ftdi.rules](docs/99-ftdi.rules). A tutorial can be found at http://hintshop.ludvig.co.nz/show/persistent-names-usb-serial-devices/
+* Please pay attention to ttyUSB name and privilege. An example for udev-rule file is provided in [docs/99-ftdi.rules](docs/99-ftdi.rules). A tutorial can be found at http://hintshop.ludvig.co.nz/show/persistent-names-usb-serial-devices/
 
 ### ROS Interfaces ###
 
