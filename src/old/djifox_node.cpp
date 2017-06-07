@@ -5,27 +5,18 @@
 #include <signal.h>
 #include <thread>
 
-#include <dji_sdk/dji_sdk_node.h>
+#include "DjiRos.h"
 #include "bluefox2/camera.h"
 
-#define BACKWARD_HAS_BFD 1
-#include "backward.hpp"
-
-namespace backward {
-    backward::SignalHandling sh;
-}
-
 int main(int argc, char **argv) {
-    ros::init(argc, argv, "djiros");
-    ros::NodeHandle nh;
-    ros::NodeHandle nh_private("~");
+    ros::init(argc, argv, "djifox");
+    ros::NodeHandle nh("~");
 
-    auto dji_sdk_node = std::make_shared<DJISDKNode>(nh, nh_private);
-
-    bluefox2::Camera camera(nh_private);
+    DjiRos djiros(nh);
+    bluefox2::Camera camera(nh);
     std::shared_ptr<HardwareSynchronizer> hwsync(new HardwareSynchronizer());
 
-    dji_sdk_node->djiros->m_hwsync = hwsync;
+    djiros.m_hwsync = hwsync;
     camera.m_hwsync = hwsync;
 
     std::thread cam_thread;
@@ -40,13 +31,10 @@ int main(int argc, char **argv) {
         cam_thread = std::thread(&bluefox2::Camera::feedImages, &camera);
     }
 
-    ros::AsyncSpinner spinner(4); // Use 4 threads
-    spinner.start();
-
     ros::Rate r(200.0);
     while (ros::ok()) {
         ros::spinOnce();
-        dji_sdk_node->djiros->process();
+        djiros.process();
         r.sleep();
     }
 

@@ -1,0 +1,3 @@
+[submodule "OSDK"]
+	path = OSDK
+	url = https://github.com/HKUST-Aerial-Robotics/OSDK.git

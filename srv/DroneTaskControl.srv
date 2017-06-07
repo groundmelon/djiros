@@ -1,0 +1,9 @@
+#takeoff: 4
+#landing: 6
+#gohome:  1
+uint8 task
+---
+bool result
+uint8 cmd_set
+uint8 cmd_id
+uint32 ack_data

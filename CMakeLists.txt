@@ -21,7 +21,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ADDITIONAL_CXX_FLAG}")
 ## Set this value to true if camera-imu sync function is needed
 set(ENABLE_DJIFOX true)
 
-
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -43,26 +42,58 @@ find_package(catkin REQUIRED COMPONENTS
 
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#    FILES
-# )
+add_message_files(
+  FILES
+  FlightControl.msg
+  FlightControlAdvanced.msg
+  FlightControlAngularRateVertPos.msg
+  FlightControlAttiVertPos.msg
+  FlightControlPosYaw.msg
+  FlightControlVelYawRate.msg
+  Gimbal.msg
+  Waypoint.msg
+  WaypointList.msg
+  MobileData.msg
+  MissionWaypointAction.msg
+  MissionWaypoint.msg
+  MissionWaypointTask.msg
+  MissionHotpointTask.msg
+)
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#    FILES
-# )
-
-## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+add_service_files(
+  FILES
+  Activation.srv
+  AttitudeControl.srv
+  CameraAction.srv
+  DroneTaskControl.srv
+  SDKControlAuthority.srv
+  MFIOConfig.srv
+  MFIOSetValue.srv
+  DroneArmControl.srv
+  MissionStatus.srv
+  MissionWpAction.srv
+  MissionHpAction.srv
+  MissionWpUpload.srv
+  MissionWpSetSpeed.srv
+  MissionWpGetSpeed.srv
+  MissionWpGetInfo.srv
+  MissionHpUpload.srv
+  MissionHpGetInfo.srv
+  MissionHpUpdateYawRate.srv
+  MissionHpUpdateRadius.srv
+  MissionHpResetYaw.srv
+  SendMobileData.srv
+  SetHardSync.srv
+)
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#    DEPENDENCIES
-# )
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+  nav_msgs
+  std_msgs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -74,10 +105,12 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  # INCLUDE_DIRS include
-  # LIBRARIES dji_sdk
-  # CATKIN_DEPENDS roscpp std_msgs rospy
-  # DEPENDS system_lib
+  INCLUDE_DIRS include
+  CATKIN_DEPENDS
+        message_runtime
+        geometry_msgs
+        nav_msgs
+        std_msgs
 )
  
 ###########
@@ -88,7 +121,9 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 
-file(GLOB DJI_SDK_LIB_SOURCES src/dji_sdk_lib/*.cpp) 
+add_subdirectory(OSDK/onboardsdk)
+
+file(GLOB DJI_SDK_LIB_SOURCES src/modules/*.cpp) 
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -100,6 +135,7 @@ set(CMAKE_MODULE_PATH "/usr/local/lib/cmake/eigen3/" ${CMAKE_MODULE_PATH})
 find_package(Eigen3 REQUIRED)
 
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
   ${mvIMPACT_INCLUDE_DIRS}
@@ -112,18 +148,24 @@ include_directories(
 
 ## Declare a cpp executable
 add_executable(djiros_node 
-	src/djiros_node.cpp 
-  src/DjiRos.cpp
-	${DJI_SDK_LIB_SOURCES})
+  src/main.cpp
+	src/DjiRos.cpp
+  ${DJI_SDK_LIB_SOURCES}
+)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-## add_dependencies(dji_sdk_node dji_sdk_generate_messages_cpp)
+add_dependencies(djiros_node 
+  djiosdk-core 
+  djiros_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(djiros_node
    ${catkin_LIBRARIES}
    ${mvIMPACT_LIBRARIES}
+   djiosdk-core
+   bfd
+   dl
 )
 
 if (ENABLE_DJIFOX)
@@ -136,6 +178,19 @@ if (ENABLE_DJIFOX)
   target_link_libraries(djifox_node
      ${catkin_LIBRARIES}
      ${mvIMPACT_LIBRARIES}
+     djiosdk-core
+     bfd
+     dl
   )
 
 endif(ENABLE_DJIFOX)
+
+option(USE_COLLISION_AVOIDANCE "Use DJI collision avoidance library" OFF)
+if(USE_COLLISION_AVOIDANCE)
+  include(${CMAKE_MODULE_PATH}/External_CollisionAvoidance.cmake)
+endif()
+
+option(USE_POINTCLOUD2LAS "Use DJI Pointcloud to LAS converter library" OFF)
+if(USE_POINTCLOUD2LAS)
+  include(${CMAKE_MODULE_PATH}/External_Pointcloud2Las.cmake)
+endif()

@@ -1,0 +1,10 @@
+#start:  0
+#stop:   1
+#pause:  2
+#resume: 3
+uint8 action
+---
+bool result
+uint8 cmd_set
+uint8 cmd_id
+uint32 ack_data

@@ -49,7 +49,7 @@ Camera::Camera(ros::NodeHandle _param_nh)
         std::string prefix = boost::str(boost::format("camera%d/") % i);
 
         CameraSetting cs;
-        pnode.param(prefix + "serial", cs.serial, std::string(""));
+        pnode.param(prefix + "serial", cs.serial, std::string("25001214"));
         pnode.param(prefix + "topic", cs.topic, boost::str(boost::format("image%d") % i));
 
         // pnode.param(prefix + std::string("fps"), fps, 30.0);

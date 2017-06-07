@@ -1,0 +1,4 @@
+# 0-7
+uint8 channel
+uint32 init_on_time_us
+---

@@ -1,0 +1,6 @@
+# frequency in Hz
+# the tag is to distinguish between different call
+uint32 frequency
+uint16 tag
+----
+uint8 result
