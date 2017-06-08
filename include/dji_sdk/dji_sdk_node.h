@@ -13,7 +13,6 @@
 #define DJI_SDK_NODE_MAIN_H
 
 #include <dji_sdk/dji_sdk.h>
-#include <dji_sdk/DjiRos.h>
 #include <ros/ros.h>
 
 using namespace DJI::OSDK;
@@ -21,6 +20,7 @@ using namespace DJI::OSDK;
 class DJISDKNode
 {
 public:
+  DJISDKNode();
   DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private);
   DJISDKNode(const DJISDKNode& other) = delete;
   ~DJISDKNode();
@@ -31,7 +31,7 @@ public:
     USE_SUBSCRIBE = 1
   };
 
-private:
+protected:
   bool initVehicle(ros::NodeHandle& nh_private);
   bool initServices(ros::NodeHandle& nh);
   bool initFlightControl(ros::NodeHandle& nh);
@@ -136,12 +136,12 @@ private:
                                    DJI::OSDK::UserData userData);
   static void publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
                               DJI::OSDK::UserData userData);
-  static void publish400HzData(Vehicle* vehicle, RecvContainer recvFrame,
+  static void publish200HzData(Vehicle* vehicle, RecvContainer recvFrame,
                                DJI::OSDK::UserData userData);
-public:
-  //! OSDK core
+
+protected:
+    //! OSDK core
   Vehicle* vehicle;
-private:
     //! general service servers
   ros::ServiceServer drone_activation_server;
   ros::ServiceServer sdk_ctrlAuthority_server;
@@ -184,10 +184,10 @@ private:
   ros::Subscriber gimbal_angle_cmd_subscriber;
   ros::Subscriber gimbal_speed_cmd_subscriber;
   //! telemetry data publisher
-  ros::Publisher imu_publisher;
   ros::Publisher attitude_publisher;
   ros::Publisher angularRate_publisher;
   ros::Publisher acceleration_publisher;
+  ros::Publisher imu_publisher;
   ros::Publisher flight_status_publisher;
   ros::Publisher gps_health_publisher;
   ros::Publisher gps_position_publisher;
@@ -208,10 +208,6 @@ private:
   //! flight controller flags
   TELEMETRY_TYPE telemetry_from_fc;
   bool           use_data_subscribe_flag;
-
-public:
-// Added by GroumeMelon
-  std::shared_ptr<DjiRos> djiros;
 };
 
 #endif // DJI_SDK_NODE_MAIN_H

@@ -15,6 +15,10 @@
 
 using namespace DJI::OSDK;
 
+DJISDKNode::DJISDKNode() {
+
+};
+
 DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
   : telemetry_from_fc(USE_BROADCAST)
 {
@@ -44,9 +48,6 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
   {
     throw std::runtime_error("initPublisher failed");
   }
-
-  djiros = std::make_shared<DjiRos>(nh_private, this);
-
 }
 
 DJISDKNode::~DJISDKNode()
@@ -104,8 +105,6 @@ DJISDKNode::initVehicle(ros::NodeHandle& nh_private)
   {
     telemetry_from_fc = USE_SUBSCRIBE;
   }
-
-  vehicle->hardSync->setSyncFreq(20);
 
   return true;
 }
@@ -203,12 +202,10 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
    *
    *
    * */
-  rc_publisher = nh.advertise<sensor_msgs::Joy>("rc", 10);
-
-  imu_publisher = nh.advertise<sensor_msgs::Imu>("imu", 10);
+  rc_publisher = nh.advertise<sensor_msgs::Joy>("dji_sdk/rc", 10);
 
   attitude_publisher =
-    nh.advertise<geometry_msgs::Quaternion>("attitude", 10);
+          nh.advertise<geometry_msgs::Quaternion>("dji_sdk/attitude", 10);
 
   /*!
    * x: roll, rad/s
@@ -217,7 +214,7 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
    * body frame
    */
   angularRate_publisher =
-    nh.advertise<geometry_msgs::Vector3Stamped>("angular_rate", 10);
+          nh.advertise<geometry_msgs::Vector3Stamped>("dji_sdk/angular_rate", 10);
 
   /*!
    * TODO: decide frame
@@ -226,15 +223,15 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
    * z: m/s^2
    */
   acceleration_publisher =
-    nh.advertise<geometry_msgs::Vector3Stamped>("acceleration", 10);
+          nh.advertise<geometry_msgs::Vector3Stamped>("dji_sdk/acceleration", 10);
 
-  imu_publisher = nh.advertise<sensor_msgs::Imu>("imu", 10);
+  imu_publisher = nh.advertise<sensor_msgs::Imu>("dji_sdk/imu", 10);
 
   flight_status_publisher =
-    nh.advertise<std_msgs::UInt8>("flight_status", 10);
+          nh.advertise<std_msgs::UInt8>("dji_sdk/flight_status", 10);
 
   gps_health_publisher =
-    nh.advertise<std_msgs::UInt8>("gps_health", 10);
+          nh.advertise<std_msgs::UInt8>("dji_sdk/gps_health", 10);
 
   /*!
    * NavSatFix specs:
@@ -244,16 +241,16 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
    *   Altitude [m]. Positive is above the WGS 84 ellipsoid
    */
   gps_position_publisher =
-    nh.advertise<sensor_msgs::NavSatFix>("gps_position", 10);
+          nh.advertise<sensor_msgs::NavSatFix>("dji_sdk/gps_position", 10);
 
   velocity_publisher =
-    nh.advertise<geometry_msgs::Vector3Stamped>("velocity", 10);
+          nh.advertise<geometry_msgs::Vector3Stamped>("dji_sdk/velocity", 10);
 
   from_mobile_data_publisher =
-    nh.advertise<dji_sdk::MobileData>("from_mobile_data", 10);
+          nh.advertise<dji_sdk::MobileData>("dji_sdk/from_mobile_data", 10);
 
   gimbal_angle_publisher =
-    nh.advertise<geometry_msgs::Vector3Stamped>("gimbal_angle", 10);
+          nh.advertise<geometry_msgs::Vector3Stamped>("dji_sdk/gimbal_angle", 10);
 
   ACK::ErrorCode broadcast_set_freq_ack;
 
@@ -262,7 +259,7 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
     ROS_INFO("Hardware or firmware only support data broadcast!");
     // default freq 50Hz
     broadcast_set_freq_ack =
-      vehicle->broadcast->setBroadcastFreqDefaults(WAIT_TIMEOUT);
+            vehicle->broadcast->setBroadcastFreqDefaults(WAIT_TIMEOUT);
 
     if (ACK::getError(broadcast_set_freq_ack))
     {
@@ -271,7 +268,7 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
     }
     // register a callback function whenever a broadcast data is in
     vehicle->broadcast->setUserBroadcastCallback(
-      &DJISDKNode::SDKBroadcastCallback, this);
+            &DJISDKNode::SDKBroadcastCallback, this);
   }
   else if (telemetry_from_fc == USE_SUBSCRIBE)
   {
@@ -279,7 +276,7 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
 
     // Extra topics that is only available from subscription
     displaymode_publisher =
-      nh.advertise<std_msgs::UInt8>("display_mode", 10);
+            nh.advertise<std_msgs::UInt8>("dji_sdk/display_mode", 10);
 
     if (!initDataSubscribeFromFC())
     {
@@ -300,45 +297,43 @@ DJISDKNode::initDataSubscribeFromFC()
     return false;
   }
 
-  // 400 Hz package from FC
-  Telemetry::TopicName topicList400Hz[] = {
-    // Telemetry::TOPIC_QUATERNION,
-    // Telemetry::TOPIC_ACCELERATION_BODY,
-    // Telemetry::TOPIC_ACCELERATION_GROUND,
-    // Telemetry::TOPIC_ACCELERATION_RAW,
-    // Telemetry::TOPIC_PALSTANCE_FUSIONED,
-    // Telemetry::TOPIC_PALSTANCE_RAW,
-    // Telemetry::TOPIC_VELOCITY
-    Telemetry::TOPIC_HARD_SYNC
+  // 200 Hz package from FC
+  Telemetry::TopicName topicList200Hz[] = {
+          Telemetry::TOPIC_QUATERNION,
+          Telemetry::TOPIC_ACCELERATION_BODY,
+          Telemetry::TOPIC_ACCELERATION_GROUND,
+          Telemetry::TOPIC_ACCELERATION_RAW,
+          Telemetry::TOPIC_PALSTANCE_FUSIONED,
+          Telemetry::TOPIC_PALSTANCE_RAW,
+          Telemetry::TOPIC_VELOCITY
   };
-  int nTopic400Hz    = sizeof(topicList400Hz) / sizeof(topicList400Hz[0]);
-  int packageID400Hz = 0;
-  if (vehicle->subscribe->initPackageFromTopicList(packageID400Hz, nTopic400Hz,
-                                                   topicList400Hz, 0, 400))
+  int nTopic200Hz    = sizeof(topicList200Hz) / sizeof(topicList200Hz[0]);
+  int packageID200Hz = 0;
+  if (vehicle->subscribe->initPackageFromTopicList(packageID200Hz, nTopic200Hz,
+                                                   topicList200Hz, 0, 200))
   {
-    ack = vehicle->subscribe->startPackage(packageID400Hz, WAIT_TIMEOUT);
+    ack = vehicle->subscribe->startPackage(packageID200Hz, WAIT_TIMEOUT);
     if (ACK::getError(ack))
     {
-      vehicle->subscribe->removePackage(packageID400Hz, WAIT_TIMEOUT);
-      ROS_ERROR("Failed to start 400Hz mpackage");
+      vehicle->subscribe->removePackage(packageID200Hz, WAIT_TIMEOUT);
+      ROS_ERROR("Failed to start 200Hz mpackage");
       return false;
     }
     else
     {
       vehicle->subscribe->registerUserPackageUnpackCallback(
-        packageID400Hz, publish400HzData, this);
+              packageID200Hz, publish200HzData, this);
     }
   }
 
   // 50 Hz package from FC
   Telemetry::TopicName topicList50Hz[] = {
-    Telemetry::TOPIC_VELOCITY,
-    Telemetry::TOPIC_GPS_FUSED,     Telemetry::TOPIC_HEIGHT_FUSION,
-    Telemetry::TOPIC_STATUS_FLIGHT, Telemetry::TOPIC_STATUS_DISPLAYMODE,
-    Telemetry::TOPIC_GPS_DATE,      Telemetry::TOPIC_GPS_TIME,
-    Telemetry::TOPIC_GPS_POSITION,  Telemetry::TOPIC_GPS_VELOCITY,
-    Telemetry::TOPIC_GPS_DETAILS,   Telemetry::TOPIC_GIMBAL_ANGLES,
-    Telemetry::TOPIC_GIMBAL_STATUS, Telemetry::TOPIC_RC
+          Telemetry::TOPIC_GPS_FUSED,     Telemetry::TOPIC_HEIGHT_FUSION,
+          Telemetry::TOPIC_STATUS_FLIGHT, Telemetry::TOPIC_STATUS_DISPLAYMODE,
+          Telemetry::TOPIC_GPS_DATE,      Telemetry::TOPIC_GPS_TIME,
+          Telemetry::TOPIC_GPS_POSITION,  Telemetry::TOPIC_GPS_VELOCITY,
+          Telemetry::TOPIC_GPS_DETAILS,   Telemetry::TOPIC_GIMBAL_ANGLES,
+          Telemetry::TOPIC_GIMBAL_STATUS, Telemetry::TOPIC_RC
   };
   int nTopic50Hz    = sizeof(topicList50Hz) / sizeof(topicList50Hz[0]);
   int packageID50Hz = 1;
@@ -356,7 +351,7 @@ DJISDKNode::initDataSubscribeFromFC()
     else
     {
       vehicle->subscribe->registerUserPackageUnpackCallback(
-        packageID50Hz, publish50HzData, (UserData) this);
+              packageID50Hz, publish50HzData, (UserData) this);
     }
   }
   return true;

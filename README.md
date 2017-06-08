@@ -8,6 +8,8 @@ This is a modified version of Onboard-SDK-ROS, which uses standard ros message t
 
 * If you don't need mvBlueFOX synchronization, just [set ENABLE_DJIFOX to false](https://github.com/groundmelon/djiros/blob/A3/CMakeLists.txt#L22) to eliminate compile errors about mvBlueFOX drivers.
 
+* Follow instructions of [DJI-OSDK](https://github.com/HKUST-Aerial-Robotics/OSDK) to install it into the system
+
 * **launch/djiros.launch** will use environment variables to get APPID and ENCKEY. You can add your id and key in your launch file / set it to the environment / hardcode it in the source code.
 
 * Configure A3 SDK as below
@@ -22,7 +24,7 @@ This is a modified version of Onboard-SDK-ROS, which uses standard ros message t
 * baud_rate               [int]    : Baudrate for serial port
 * app_id                  [int]    : App Id for dji sdk
 * enc_key                 [string] : App Key for dji sdk
-* only_broadcast          [bool]   : No activation and control is needed, just broadcast imu, rc, gps, ...
+* sensor_mode             [bool]   : No activation and control is needed, just output imu, rc, gps, ...
 * align_with_fmu          [bool]   : Use ticks from FMU/ ros::Time::now() when data is received.
 * gravity                 [double] : scale multiplied on accelerometer output
 * ctrl_cmd_stream_timeout [double] : timeout for judging if control command is streaming in or stopped
@@ -31,4 +33,4 @@ This is a modified version of Onboard-SDK-ROS, which uses standard ros message t
 #### Topics ###
 * See the code and [official documents](https://developer.dji.com/onboard-sdk/documentation/) for published topics and their details.
 * Subscriber "~ctrl" for control the drone
-* Subscriber "~gimbal_ctrl" and "~gimbal_speed_ctrl" for control the gimbal
+<!-- * Subscriber "~gimbal_ctrl" and "~gimbal_speed_ctrl" for control the gimbal -->

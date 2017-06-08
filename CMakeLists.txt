@@ -123,7 +123,8 @@ catkin_package(
 
 add_subdirectory(OSDK/onboardsdk)
 
-file(GLOB DJI_SDK_LIB_SOURCES src/modules/*.cpp) 
+file(GLOB DJI_OSDK_ROS_SOURCES src/modules/*.cpp) 
+file(GLOB DJIROS_SOURCES src/djiros/DjiRos*.cpp) 
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -148,9 +149,9 @@ include_directories(
 
 ## Declare a cpp executable
 add_executable(djiros_node 
-  src/main.cpp
-	src/DjiRos.cpp
-  ${DJI_SDK_LIB_SOURCES}
+  src/djiros/djiros_node.cpp
+  ${DJIROS_SOURCES}
+  ${DJI_OSDK_ROS_SOURCES}
 )
 
 ## Add cmake target dependencies of the executable/library
@@ -170,11 +171,12 @@ target_link_libraries(djiros_node
 
 if (ENABLE_DJIFOX)
   add_executable(djifox_node
-    src/djifox_node.cpp
+    src/djiros/djifox_node.cpp
     src/bluefox2/camera.cpp
-    src/DjiRos.cpp
-    ${DJI_SDK_LIB_SOURCES}
+    ${DJIROS_SOURCES}
+    ${DJI_OSDK_ROS_SOURCES}
   )
+
   target_link_libraries(djifox_node
      ${catkin_LIBRARIES}
      ${mvIMPACT_LIBRARIES}

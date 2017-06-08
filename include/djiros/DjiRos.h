@@ -57,11 +57,10 @@
 
 // ros includes
 #include <ros/ros.h>
+#include <sensor_msgs/Joy.h>
 
-// forward declaration
-class DJISDKNode;
-
-#include <dji_sdk/HardwareSync.h>
+#include <djiros/HardwareSync.h>
+#include <dji_sdk/dji_sdk_node.h>
 
 #define ASSERT_EQUALITY(x, y) ROS_ASSERT_MSG((x) == (y), "_1:%d _2:%d", (int)x, (int)y);
 
@@ -150,6 +149,7 @@ public:
     // If no need for align, set msg_stamp and return true;
     // If need align, return false when ualigned/aligning, and return true & set msg_stamp when aligned.
     bool acquire_stamp(ros::Time& msg_stamp, uint32_t tick);
+    ros::Time acquire_latest_stamp() {return last_msg_stamp;};
 
 private:
     struct AlignData_t {
@@ -166,19 +166,63 @@ private:
     static double constexpr TIME_DIFF_ALERT = 0.02050;
 };
 
-class DjiRos {
+class DjiRos : public DJISDKNode {
 public:
-    DjiRos(ros::NodeHandle& nh, DJISDKNode* _djisdknode);
+    DjiRos(ros::NodeHandle& nh, ros::NodeHandle& nh_private);
+    ~DjiRos();
+
+    // ---- Data subscription / publish related functions ----
+    bool initPublisher(ros::NodeHandle &nh); // overloaded
+
+    bool initDataSubscribeFromFC(); // overloaded
+
+    // Overloaded callbacks for subscription data
+    static void publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
+            DJI::OSDK::UserData userData); // overloaded
+
+    static void publish400HzData(Vehicle* vehicle, RecvContainer recvFrame,
+            DJI::OSDK::UserData userData); // overloaded
+
+
+    // ---- Functional ----
     void process();
 
     Aligner aligner;
+    LevelTrigger<int16_t> api_trigger;
 
-private:
-    DJISDKNode* djisdknode;
+    // ---- Authority related ----
+    /* clang-format off */
+    // Obtain and release control status transfer instructions
+    // released             + <switch info F mode>                  = wait_for_command
+    // wait_for_command     + <control command is streaming in>     = obtaining
+    // obtaining            + <sdk response obtain successfully>    = obtained
+    // obtained             + <control command stream timeout>      = released
+    // wait_for_command     + <control command wait timeout>        = released
+    /* clang-format on */
+    enum struct CtrlState_t { released, wait_for_command, obtaining, obtained };
+    CtrlState_t ctrl_state;
+    double ctrl_cmd_wait_timeout_limit;
+    double ctrl_cmd_stream_timeout_limit;
+    ros::Time last_ctrl_stamp;
+    ros::Time wait_start_stamp;
+    bool sdk_control_flag;
+    ros::Subscriber ctrl_sub;
+
+    bool initSubscriber(ros::NodeHandle &nh); // overloaded
+    void control_callback(const sensor_msgs::JoyConstPtr& pMsg);
+    static void on_authority_ack(Vehicle* vehicle, RecvContainer recvFrame, DJI::OSDK::UserData userData);
+    void obtain_control(bool b);
+    void manually_leave_api_mode(bool need_release);
+
+//    bool m_verbose_output;
 
 public:
     std::shared_ptr<HardwareSynchronizer> m_hwsync;
     int m_hwsync_ack_count;
-    double gravity;
+
 private:
+    // parameters
+    Eigen::Matrix3d ros_R_fc;
+    double gravity; // multiplied to IMU
+    bool sensor_mode; // only publish or publish + control
 };

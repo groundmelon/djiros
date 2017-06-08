@@ -162,98 +162,44 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
   p->rc_publisher.publish(rc_joy);
 }
 
-
 void
-DJISDKNode::publish400HzData(Vehicle* vehicle, RecvContainer recvFrame,
+DJISDKNode::publish200HzData(Vehicle* vehicle, RecvContainer recvFrame,
                              DJI::OSDK::UserData userData)
 {
   DJISDKNode* p = (DJISDKNode*)userData;
 
-  Telemetry::TypeMap<Telemetry::TOPIC_HARD_SYNC>::type hs_data =
-    vehicle->subscribe->getValue<Telemetry::TOPIC_HARD_SYNC>();
+  Telemetry::TypeMap<Telemetry::TOPIC_QUATERNION>::type quat =
+    vehicle->subscribe->getValue<Telemetry::TOPIC_QUATERNION>();
+  geometry_msgs::Quaternion q;
+  // @note this mapping is tested
+  q.w = quat.q0;
+  q.x = quat.q1;
+  q.y = quat.q2;
+  q.z = quat.q3;
+  p->attitude_publisher.publish(q);
 
-  sensor_msgs::Imu imu_msg;
+  Telemetry::TypeMap<Telemetry::TOPIC_VELOCITY>::type v_FC =
+    vehicle->subscribe->getValue<Telemetry::TOPIC_VELOCITY>();
+  geometry_msgs::Vector3Stamped v;
+  // v_FC has 2 fields, data and info. The latter contains the health
+  v.vector.x = v_FC.data.x;
+  v.vector.y = v_FC.data.y;
+  v.vector.z = v_FC.data.z;
+  p->velocity_publisher.publish(v);
 
-  if (!p->djiros.get()) return;
+  Telemetry::TypeMap<Telemetry::TOPIC_PALSTANCE_FUSIONED>::type w_FC =
+    vehicle->subscribe->getValue<Telemetry::TOPIC_PALSTANCE_FUSIONED>();
+  geometry_msgs::Vector3Stamped angular_rate;
+  angular_rate.vector.x = w_FC.x;
+  angular_rate.vector.y = w_FC.y;
+  angular_rate.vector.z = w_FC.z;
+  p->angularRate_publisher.publish(angular_rate);
 
-  bool aligned = p->djiros->aligner.acquire_stamp(imu_msg.header.stamp, hs_data.ts.time2p5ms);
-
-  if (!aligned)
-    return;
-
-  imu_msg.header.frame_id = std::string("body");
-
-  imu_msg.orientation.w = hs_data.q.q0;
-  imu_msg.orientation.x = hs_data.q.q1;
-  imu_msg.orientation.y = hs_data.q.q2;
-  imu_msg.orientation.z = hs_data.q.q3;
-
-  imu_msg.angular_velocity.x = hs_data.w.x;
-  imu_msg.angular_velocity.y = hs_data.w.y;
-  imu_msg.angular_velocity.z = hs_data.w.z;
-
-  imu_msg.linear_acceleration.x = hs_data.a.x * p->djiros->gravity;
-  imu_msg.linear_acceleration.y = hs_data.a.y * p->djiros->gravity;
-  imu_msg.linear_acceleration.z = hs_data.a.z * p->djiros->gravity;
-
-  p->imu_publisher.publish(imu_msg);
-
-  if (hs_data.ts.flag) {
-//    ROS_DEBUG("sdk recv sync:%d #%d @ %d.%d",
-//              bc_data.timeStamp.syncFlag,
-//              m_hwsync_ack_count,
-//              msg_stamp.sec, msg_stamp.nsec);
-
-    if (p->djiros->m_hwsync.get()) {
-      auto hwsync = p->djiros->m_hwsync;
-      std::lock_guard<std::mutex> lg(hwsync->ack_mutex);
-      hwsync->ack_queue.emplace(imu_msg.header.stamp, p->djiros->m_hwsync_ack_count);
-    }
-
-    p->djiros->m_hwsync_ack_count++;
-  }
-
-//  ROS_INFO("Sync: f[%d] idx[%d] tick[%d]", hs_data.ts.flag, hs_data.ts.index, hs_data.ts.time2p5ms);
+  Telemetry::TypeMap<Telemetry::TOPIC_ACCELERATION_GROUND>::type a_FC =
+    vehicle->subscribe->getValue<Telemetry::TOPIC_ACCELERATION_GROUND>();
+  geometry_msgs::Vector3Stamped acceleration;
+  acceleration.vector.x = a_FC.x;
+  acceleration.vector.y = a_FC.y;
+  acceleration.vector.z = a_FC.z;
+  p->acceleration_publisher.publish(acceleration);
 }
-
-// void
-// DJISDKNode::publish200HzData(Vehicle* vehicle, RecvContainer recvFrame,
-//                              DJI::OSDK::UserData userData)
-// {
-//   DJISDKNode* p = (DJISDKNode*)userData;
-
-//   Telemetry::TypeMap<Telemetry::TOPIC_QUATERNION>::type quat =
-//     vehicle->subscribe->getValue<Telemetry::TOPIC_QUATERNION>();
-//   geometry_msgs::Quaternion q;
-//   // @note this mapping is tested
-//   q.w = quat.q0;
-//   q.x = quat.q1;
-//   q.y = quat.q2;
-//   q.z = quat.q3;
-//   p->attitude_publisher.publish(q);
-
-//   Telemetry::TypeMap<Telemetry::TOPIC_VELOCITY>::type v_FC =
-//     vehicle->subscribe->getValue<Telemetry::TOPIC_VELOCITY>();
-//   geometry_msgs::Vector3Stamped v;
-//   // v_FC has 2 fields, data and info. The latter contains the health
-//   v.vector.x = v_FC.data.x;
-//   v.vector.y = v_FC.data.y;
-//   v.vector.z = v_FC.data.z;
-//   p->velocity_publisher.publish(v);
-
-//   Telemetry::TypeMap<Telemetry::TOPIC_PALSTANCE_FUSIONED>::type w_FC =
-//     vehicle->subscribe->getValue<Telemetry::TOPIC_PALSTANCE_FUSIONED>();
-//   geometry_msgs::Vector3Stamped angular_rate;
-//   angular_rate.vector.x = w_FC.x;
-//   angular_rate.vector.y = w_FC.y;
-//   angular_rate.vector.z = w_FC.z;
-//   p->angularRate_publisher.publish(angular_rate);
-
-//   Telemetry::TypeMap<Telemetry::TOPIC_ACCELERATION_GROUND>::type a_FC =
-//     vehicle->subscribe->getValue<Telemetry::TOPIC_ACCELERATION_GROUND>();
-//   geometry_msgs::Vector3Stamped acceleration;
-//   acceleration.vector.x = a_FC.x;
-//   acceleration.vector.y = a_FC.y;
-//   acceleration.vector.z = a_FC.z;
-//   p->acceleration_publisher.publish(acceleration);
-// }

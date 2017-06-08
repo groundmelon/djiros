@@ -1,14 +1,14 @@
 <launch>
-	<node pkg="djiros" type="djiros_node" name="djiros" output="screen"
-		launch-prefix="" >
-		<!-- node parameters -->
-		<param name="serial_name" type="string" value="/dev/ttyUSB0"/>
-		<param name="baud_rate" type="int" value="921600"/>
-		<param name="A3_or_M100" type="int" value="0"/>
-		<param name="app_id" type="int" value="$(env DJIROS_APPID)"/>
-		<param name="app_version" type="int" value="1"/>
-		<param name="enc_key" type="string" value="$(env DJIROS_ENCKEY)"/>	
-		<param name="only_broadcast" type="bool" value="false"/>
-		<param name="align_with_fmu" type="bool" value="false"/>
+    <node pkg="djiros" type="djiros_node" name="djiros" output="screen" launch-prefix="">
+        <param name="log_level" type="string" value="info"/>
+        <param name="serial_name" type="string" value="/dev/ttyUSB0"/>
+        <param name="baud_rate" type="int" value="921600"/>
+        <param name="app_id" type="int" value="$(env DJIROS_APPID)"/>
+        <param name="enc_key" type="string" value="$(env DJIROS_ENCKEY)"/>  
+        <param name="app_version" type="int" value="1"/>
+        <param name="sensor_mode" type="bool" value="false"/>
+        <param name="align_with_fmu" type="bool" value="false"/>
+        <param name="app_id" type="int" value="1022384"/>
+        <param name="enc_key" type="string" value="e7bad64696529559318bb35d0a8c6050d3b88e791e1808cfe8f7802150ee6f0d"/>  
 	</node>
 </launch>

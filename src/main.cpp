@@ -11,29 +11,19 @@
 
 #include <dji_sdk/dji_sdk_node.h>
 
-#define BACKWARD_HAS_BFD 1
-#include "backward.hpp"
-
-namespace backward {
-    backward::SignalHandling sh;
-}
-
 int main(int argc, char **argv) {
-  ros::init(argc, argv, "djiros");
+  ros::init(argc, argv, "dji_sdk");
   ros::NodeHandle nh;
   ros::NodeHandle nh_private("~");
 
-  auto dji_sdk_node = std::make_shared<DJISDKNode>(nh, nh_private);
+  DJISDKNode* dji_sdk_node = new DJISDKNode(nh, nh_private);
 
   ros::AsyncSpinner spinner(4); // Use 4 threads
   spinner.start();
+  ros::waitForShutdown();
 
-  while(ros::ok()) {
-      ros::Duration(1).sleep();
-  }
-
-//  delete dji_sdk_node;
-//  dji_sdk_node = NULL;
+  delete dji_sdk_node;
+  dji_sdk_node = NULL;
 
   return 0;
 }

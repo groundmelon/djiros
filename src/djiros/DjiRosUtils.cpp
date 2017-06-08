@@ -1,9 +1,8 @@
 //
-// Created by ltb on 6/7/17.
+// Created by ltb on 6/8/17.
 //
 
-#include <dji_sdk/dji_sdk_node.h>
-#include "dji_sdk/DjiRos.h"
+#include <djiros/DjiRos.h>
 
 #define _TICK2ROSTIME(tick) (ros::Duration((double)(tick) / 400.0))
 
@@ -25,6 +24,7 @@ bool Aligner::acquire_stamp(ros::Time& msg_stamp, uint32_t tick) {
 
         if (align_state == State_t::aligning) {
             align_state = State_t::aligned;
+            ROS_ERROR("[djiros] ***** IMU ALIGNED *****");
             return false;
             // Here we do not do following tasks because I find that the dt varies largely,
             // from 1 ms to 10+ ms, such that I cannot test it.
@@ -68,6 +68,7 @@ bool Aligner::acquire_stamp(ros::Time& msg_stamp, uint32_t tick) {
                         1.0, "[djiros] SysTime - TickTime = %.0f ms [%d]", dt * 1000, cnt);
             }
 
+            last_msg_stamp = msg_stamp;
             return true;
         }
     } else  // Will not align with fmu, just use ros::Time::now()
@@ -81,38 +82,3 @@ bool Aligner::acquire_stamp(ros::Time& msg_stamp, uint32_t tick) {
 
     return false;
 };
-
-DjiRos::DjiRos(ros::NodeHandle& nh, DJISDKNode* _djisdknode):djisdknode(_djisdknode) {
-    assert(djisdknode);
-
-    nh.param("align_with_fmu",
-             aligner.align_with_fmu,
-             true);  // Whether djiros will use ticks from fmu to align with it
-    nh.param("gravity", gravity, 9.79);
-
-}
-
-void DjiRos::process() {
-    ros::Time now_time = ros::Time::now();
-
-    if(m_hwsync.get())
-    {
-        // read queue and send request to API
-        std::lock_guard<std::mutex> lg(m_hwsync->req_mutex);
-
-        while (m_hwsync->req_queue.size()) {  // There are requests in the queue
-            SyncReqInfo sync_req_info = m_hwsync->req_queue.front();
-            m_hwsync->req_queue.pop();
-
-            ROS_ASSERT(sync_req_info.freq >= 0);
-            djisdknode->vehicle->hardSync->setSyncFreq(sync_req_info.freq, 0);
-
-            if (sync_req_info.freq > 0) {
-                // clear counter
-                m_hwsync_ack_count = 0;
-                ROS_INFO("[djiros] Set sync freq to %d hz", sync_req_info.freq);
-            }
-        }
-    }
-    return;
-}

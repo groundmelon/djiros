@@ -10,7 +10,7 @@
 #include <dynamic_reconfigure/server.h>
 #include <unordered_map>
 
-#include <dji_sdk/HardwareSync.h>
+#include <djiros/HardwareSync.h>
 
 namespace bluefox2
 {

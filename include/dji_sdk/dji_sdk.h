@@ -28,43 +28,45 @@
 #include <std_msgs/UInt8.h>
 
 ////msgs
-#include <dji_sdk/FlightControl.h>
-#include <dji_sdk/FlightControlAdvanced.h>
-#include <dji_sdk/FlightControlAngularRateVertPos.h>
-#include <dji_sdk/FlightControlAttiVertPos.h>
-#include <dji_sdk/FlightControlPosYaw.h>
-#include <dji_sdk/FlightControlVelYawRate.h>
-#include <dji_sdk/Gimbal.h>
-#include <dji_sdk/MobileData.h>
+#include <djiros/FlightControl.h>
+#include <djiros/FlightControlAdvanced.h>
+#include <djiros/FlightControlAngularRateVertPos.h>
+#include <djiros/FlightControlAttiVertPos.h>
+#include <djiros/FlightControlPosYaw.h>
+#include <djiros/FlightControlVelYawRate.h>
+#include <djiros/Gimbal.h>
+#include <djiros/MobileData.h>
 
 ////srvs
 //! service headers
-#include <dji_sdk/Activation.h>
-#include <dji_sdk/CameraAction.h>
-#include <dji_sdk/DroneArmControl.h>
-#include <dji_sdk/DroneTaskControl.h>
-#include <dji_sdk/MFIOConfig.h>
-#include <dji_sdk/MFIOSetValue.h>
-#include <dji_sdk/SDKControlAuthority.h>
-#include <dji_sdk/SendMobileData.h>
+#include <djiros/Activation.h>
+#include <djiros/CameraAction.h>
+#include <djiros/DroneArmControl.h>
+#include <djiros/DroneTaskControl.h>
+#include <djiros/MFIOConfig.h>
+#include <djiros/MFIOSetValue.h>
+#include <djiros/SDKControlAuthority.h>
+#include <djiros/SendMobileData.h>
 
 //! mission service headers
 // missionManager
-#include <dji_sdk/MissionStatus.h>
+#include <djiros/MissionStatus.h>
 // waypoint
-#include <dji_sdk/MissionWpAction.h>
-#include <dji_sdk/MissionWpGetInfo.h>
-#include <dji_sdk/MissionWpGetSpeed.h>
-#include <dji_sdk/MissionWpSetSpeed.h>
-#include <dji_sdk/MissionWpUpload.h>
+#include <djiros/MissionWpAction.h>
+#include <djiros/MissionWpGetInfo.h>
+#include <djiros/MissionWpGetSpeed.h>
+#include <djiros/MissionWpSetSpeed.h>
+#include <djiros/MissionWpUpload.h>
 // hotpoint
-#include <dji_sdk/MissionHpAction.h>
-#include <dji_sdk/MissionHpGetInfo.h>
-#include <dji_sdk/MissionHpResetYaw.h>
-#include <dji_sdk/MissionHpUpdateRadius.h>
-#include <dji_sdk/MissionHpUpdateYawRate.h>
-#include <dji_sdk/MissionHpUpload.h>
+#include <djiros/MissionHpAction.h>
+#include <djiros/MissionHpGetInfo.h>
+#include <djiros/MissionHpResetYaw.h>
+#include <djiros/MissionHpUpdateRadius.h>
+#include <djiros/MissionHpUpdateYawRate.h>
+#include <djiros/MissionHpUpload.h>
 // hardsync
-#include <dji_sdk/SetHardSync.h>
+#include <djiros/SetHardSync.h>
+
+namespace dji_sdk=djiros;
 
 #endif
