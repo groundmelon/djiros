@@ -104,6 +104,7 @@ void DjiRos::process() {
       if (switch_into_F_mode) {
         ctrl_state = CtrlState_t::wait_for_command;
         wait_start_stamp = now_time;
+        ROS_INFO("[djiros] Switch into API by RC");
       }
     } else if (ctrl_state == CtrlState_t::wait_for_command) {
       if (out_of_F_mode) {
@@ -113,6 +114,7 @@ void DjiRos::process() {
         if (!ctrl_cmd_stream_timeout) {
           ctrl_state = CtrlState_t::obtaining;
           obtain_control(true);
+          ROS_INFO("[djiros] Command received, obtaining authority");
         } else {
           if (ctrl_cmd_wait_timeout) {
             ctrl_state = CtrlState_t::released;

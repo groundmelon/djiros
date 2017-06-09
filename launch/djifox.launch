@@ -23,7 +23,7 @@
 
             # individual setting for camera 0
             camera0:
-                serial: "25001161"
+                serial: "25001285"
                 topic: image
                 use_auto_exposure: false
                 exposure_time_us: 10000
