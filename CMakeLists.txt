@@ -132,13 +132,13 @@ if(ENABLE_DJIFOX)
   find_package(mvIMPACT REQUIRED)
 endif(ENABLE_DJIFOX)
 
-set(CMAKE_MODULE_PATH "/usr/local/lib/cmake/eigen3/" ${CMAKE_MODULE_PATH})
-find_package(Eigen3 REQUIRED)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+find_package(Eigen REQUIRED)
 
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIR}
+  ${EIGEN_INCLUDE_DIRS}
   ${mvIMPACT_INCLUDE_DIRS}
 )
 
