@@ -8,25 +8,25 @@
         <param name="app_version" type="int" value="1"/>
         <param name="sensor_mode" type="bool" value="false"/>
         <param name="align_with_fmu" type="bool" value="true"/>
-        <param name="app_id" type="int" value="1022384"/>
-        <param name="enc_key" type="string" value="e7bad64696529559318bb35d0a8c6050d3b88e791e1808cfe8f7802150ee6f0d"/>  
+        <!-- <param name="app_id" type="int" value="1022384"/> -->
+        <!-- <param name="enc_key" type="string" value="e7bad64696529559318bb35d0a8c6050d3b88e791e1808cfe8f7802150ee6f0d"/>   -->
         <rosparam>
             # common setting and default individual settings
             verbose_output: false
             cam_cnt: 1
-            fps:  50
+            fps:  20
             gain: 1.0
             use_auto_exposure: false
-            fast_mode: true
+            fast_mode: false
             aec_desired_gray_value: 60 # desired overall gray value for the image
             aec_control_delay_frame: 1 # larger values cause slower convergence
 
             # individual setting for camera 0
             camera0:
-                serial: "25001214"
+                serial: "25001161"
                 topic: image
                 use_auto_exposure: false
-                exposure_time_us: 2000
+                exposure_time_us: 10000
                 # aec_desired_gray_value: 60
                 # aec_control_delay_frame: 1
                 auto_speed: 0 # 0--1--2, slow--medium--fast converge to desired value

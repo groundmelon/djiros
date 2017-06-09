@@ -53,6 +53,12 @@ void DjiRos::on_authority_ack(Vehicle *vehicle,
                   "[djiros] ****** Control is released by RC ******"
                   ANSI_COLOR_RESET);
     p->sdk_control_flag = false;
+  } else if (ack.data == ErrorCode::ControlACK::SetControl::OBTAIN_CONTROL_IN_PROGRESS){
+    ACK::getErrorCodeMessage(ack, __func__);
+    p->obtain_control(true);
+  } else if (ack.data == ErrorCode::ControlACK::SetControl::RELEASE_CONTROL_IN_PROGRESS){
+    ACK::getErrorCodeMessage(ack, __func__);
+    p->obtain_control(false);
   } else {
     ACK::getErrorCodeMessage(ack, __func__);
   }

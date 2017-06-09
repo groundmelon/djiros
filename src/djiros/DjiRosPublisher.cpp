@@ -123,7 +123,7 @@ bool validate_answer(const T &ans) {
     invalid &= (p[k] == 0xFF);
   }
 
-  return invalid;
+  return !invalid;
 }
 
 void DjiRos::publish50HzData(Vehicle *vehicle,
@@ -213,6 +213,7 @@ void DjiRos::publish50HzData(Vehicle *vehicle,
 
     sensor_msgs::Joy rc_joy;
     rc_joy.header.stamp = msg_stamp;
+    rc_joy.header.frame_id = std::string("rc");
 
     rc_joy.axes.reserve(6);
     rc_joy.axes.push_back(static_cast<float>(rc.roll / 10000.0));
@@ -220,10 +221,10 @@ void DjiRos::publish50HzData(Vehicle *vehicle,
     rc_joy.axes.push_back(static_cast<float>(rc.yaw / 10000.0));
     rc_joy.axes.push_back(static_cast<float>(rc.throttle / 10000.0));
     rc_joy.axes.push_back(static_cast<float>(rc.mode / 10000.0));
-    rc_joy.axes.push_back(static_cast<float>((rc.gear - 15000) / 10000.0));
+    rc_joy.axes.push_back(static_cast<float>((-rc.gear - 15000) / 10000.0));
     p->rc_publisher.publish(rc_joy);
 
-    p->api_trigger.setValue(-rc.mode);
+    p->api_trigger.setValue(rc.mode);
 
   } while (0);
 }
@@ -243,7 +244,7 @@ void DjiRos::publish400HzData(Vehicle *vehicle,
   if (!aligned)
     return;
 
-  imu_msg.header.frame_id = std::string("body");
+  imu_msg.header.frame_id = std::string("FLU");
 
   // transform to ROS REP 103 Convention
   Eigen::Quaterniond q_fc(hs_data.q.q0, hs_data.q.q1, hs_data.q.q2, hs_data.q.q3);

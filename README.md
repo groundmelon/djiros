@@ -34,3 +34,7 @@ This is a modified version of Onboard-SDK-ROS, which uses standard ros message t
 * See the code and [official documents](https://developer.dji.com/onboard-sdk/documentation/) for published topics and their details.
 * Subscriber "~ctrl" for control the drone
 <!-- * Subscriber "~gimbal_ctrl" and "~gimbal_speed_ctrl" for control the gimbal -->
+
+#### TODO ####
+
+* Remove backwards.cpp

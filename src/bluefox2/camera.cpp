@@ -9,7 +9,8 @@ Camera::Camera(ros::NodeHandle _param_nh)
       m_fast_mode(false),
       m_hwsync_grab_count(0),
       m_max_req_number(-1),
-      m_verbose_output(false) {
+      m_verbose_output(false),
+      m_sync_offset_for_debug(0.0) {
     int exposure_time_us;
     bool use_color;
     bool use_hdr;
@@ -121,6 +122,13 @@ Camera::Camera(ros::NodeHandle _param_nh)
             ROS_ASSERT_MSG(false, "Camera %s not found!!!", cs.serial.c_str());
         }
     }
+
+    // Subscribe for debug message
+    m_offset_sub = pnode.subscribe<std_msgs::Float64>("sync_offset",
+                                                             10,
+                                                             boost::bind(&Camera::debug_sync_offset_callback, this, _1),
+                                                             ros::VoidConstPtr(),
+                                                             ros::TransportHints().tcpNoDelay());
 }
 
 Camera::~Camera() {
@@ -589,7 +597,7 @@ void Camera::process_fast_sync() {
 
                 // After artificial calibrated, we found that actually image is taken one imu later
                 // than triggered
-                img_buffer.at(serial).header.stamp = capture_time;
+                img_buffer.at(serial).header.stamp = capture_time + ros::Duration(m_sync_offset_for_debug);
                 item.second.publish(img_buffer.at(serial));
             }
         }
@@ -611,6 +619,11 @@ void Camera::process_fast_sync() {
         // tm2 = ros::Time::now();
         // ROS_INFO("sleep time %.3f", (tm2-tm1).toSec());
     }
+}
+
+void Camera::debug_sync_offset_callback(const std_msgs::Float64ConstPtr& pMsg) {
+    ROS_INFO("[djifox] Sync offset set to [img] = [imu] + %f", pMsg->data);
+    m_sync_offset_for_debug = pMsg->data;
 }
 
 }  // End of namespace bluefox2

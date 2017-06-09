@@ -5,6 +5,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
+#include <std_msgs/Float64.h>
 #include <mvIMPACT_CPP/mvIMPACT_acquire.h>
 #include <errno.h>
 #include <dynamic_reconfigure/server.h>
@@ -96,6 +97,11 @@ private:
     int m_max_req_number;
     double m_fast_stamp_offset;
     bool m_verbose_output;
+
+  // Debug
+  ros::Subscriber m_offset_sub;
+  void debug_sync_offset_callback(const std_msgs::Float64ConstPtr& pMsg);
+  double m_sync_offset_for_debug;
 };
 
 }

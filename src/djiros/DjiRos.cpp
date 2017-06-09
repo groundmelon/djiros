@@ -38,6 +38,8 @@ DjiRos::DjiRos(ros::NodeHandle &nh, ros::NodeHandle &nh_private)
                    aligner.align_with_fmu,
                    true);  // Whether djiros will use ticks from fmu to align with it
   nh_private.param("gravity", gravity, 9.79);
+  nh.param("ctrl_cmd_stream_timeout", ctrl_cmd_stream_timeout_limit, 0.1);
+  nh.param("ctrl_cmd_wait_timeout", ctrl_cmd_wait_timeout_limit, 3.0);
 
   ros_R_fc << 1, 0, 0, 0, -1, 0, 0, 0, -1;
 
