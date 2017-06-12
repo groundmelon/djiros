@@ -214,7 +214,7 @@ public:
     void obtain_control(bool b);
     void manually_leave_api_mode(bool need_release);
 
-//    bool m_verbose_output;
+    bool m_verbose_output;
 
 public:
     std::shared_ptr<HardwareSynchronizer> m_hwsync;

@@ -10,6 +10,12 @@ using namespace DJI::OSDK;
 DjiRos::DjiRos(ros::NodeHandle &nh, ros::NodeHandle &nh_private)
     : DJISDKNode(),
       api_trigger(static_cast<int16_t>(5000)), // 8000 is F-mode, 0 is A-mode, set threshold to 5000
+      ctrl_state(CtrlState_t::released),
+      ctrl_cmd_wait_timeout_limit(0.0),
+      ctrl_cmd_stream_timeout_limit(0.0),
+      last_ctrl_stamp(ros::Time(0)),
+      sdk_control_flag(false),
+      m_verbose_output(false),
       m_hwsync_ack_count(0) {
   nh_private.param("sensor_mode", sensor_mode, false); // only publish or publish + control
 
