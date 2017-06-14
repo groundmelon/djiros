@@ -1,16 +1,18 @@
-## A modified [dji-sdk/Onboard-SDK-ROS](https://github.com/dji-sdk/Onboard-SDK-ROS) ##
+## A modified [TODO/OSDK(https://todo) ##
 
-This is a modified version of Onboard-SDK-ROS, which uses standard ros message types, providing limited function of dji-sdk.
+This is a modified version of TODO, which uses standard ros message types, providing limited function of TODO.
 
 ### Usage ###
 
-* Modify **CMakeLists.txt** to add Eigen3 to the include directories. It depends on which version of Eigen your are using ( from apt-get, manually installed or other situation)
+* FindEigen.cmake from **ceres-solver** is used. Please modify it accordingly if you meet some problem about Eigen.
 
-* If you don't need mvBlueFOX synchronization, just [set ENABLE_DJIFOX to false](https://github.com/groundmelon/djiros/blob/A3/CMakeLists.txt#L22) to eliminate compile errors about mvBlueFOX drivers.
+* Remember to pull the submodule OSDK, such as ```git submodule init && git submodule update```
+
+* If you don't need mvBlueFOX synchronization, just [set ENABLE_DJIFOX to false](CMakeLists.txt#L22) to eliminate compile errors about mvBlueFOX drivers. If you need it, please install [the bluefox camera drivers](https://www.matrix-vision.com/USB2.0-single-board-camera-mvbluefox-mlc.html).
 
 * Follow instructions of [DJI-OSDK](https://github.com/HKUST-Aerial-Robotics/OSDK) to install it into the system
 
-* **launch/djiros.launch** will use environment variables to get APPID and ENCKEY. You can add your id and key in your launch file / set it to the environment / hardcode it in the source code.
+* **launch/djiros.launch** and **launch/djifox.launch** will use environment variables to get APPID and ENCKEY. You can add your id and key in your launch file / set it to the environment / hardcode it in the source code.
 
 * Configure A3 SDK as below
   ![A3 Configuration](docs/configuration.png)
@@ -38,3 +40,9 @@ This is a modified version of Onboard-SDK-ROS, which uses standard ros message t
 #### TODO ####
 
 * Remove backwards.cpp
+
+* Remove submodule when OSDK is released
+
+* Update screenshot
+
+* Add parameter explanations for bluefox

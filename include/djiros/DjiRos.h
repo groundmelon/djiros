@@ -177,11 +177,11 @@ public:
     bool initDataSubscribeFromFC(); // overloaded
 
     // Overloaded callbacks for subscription data
-    static void publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
-            DJI::OSDK::UserData userData); // overloaded
+    static void onReceive50HzData(Vehicle *vehicle, RecvContainer recvFrame,
+                                  DJI::OSDK::UserData userData); // overloaded
 
-    static void publish400HzData(Vehicle* vehicle, RecvContainer recvFrame,
-            DJI::OSDK::UserData userData); // overloaded
+    static void onReceive400HzData(Vehicle *vehicle, RecvContainer recvFrame,
+                                   DJI::OSDK::UserData userData); // overloaded
 
 
     // ---- Functional ----

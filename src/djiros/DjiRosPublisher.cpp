@@ -78,7 +78,7 @@ bool DjiRos::initDataSubscribeFromFC() {
       return false;
     } else {
       vehicle->subscribe->registerUserPackageUnpackCallback(
-          packageID400Hz, DjiRos::publish400HzData, this);
+          packageID400Hz, DjiRos::onReceive400HzData, this);
     }
   }
 
@@ -108,7 +108,7 @@ bool DjiRos::initDataSubscribeFromFC() {
       return false;
     } else {
       vehicle->subscribe->registerUserPackageUnpackCallback(
-          packageID50Hz, DjiRos::publish50HzData, (UserData) this);
+          packageID50Hz, DjiRos::onReceive50HzData, (UserData) this);
     }
   }
   return true;
@@ -126,9 +126,9 @@ bool validate_answer(const T &ans) {
   return !invalid;
 }
 
-void DjiRos::publish50HzData(Vehicle *vehicle,
-                             RecvContainer recvFrame,
-                             DJI::OSDK::UserData userData) {
+void DjiRos::onReceive50HzData(Vehicle *vehicle,
+                               RecvContainer recvFrame,
+                               DJI::OSDK::UserData userData) {
   DjiRos *p = (DjiRos *) userData;
 
   ros::Time msg_stamp = p->aligner.acquire_latest_stamp();
@@ -229,9 +229,9 @@ void DjiRos::publish50HzData(Vehicle *vehicle,
   } while (0);
 }
 
-void DjiRos::publish400HzData(Vehicle *vehicle,
-                              RecvContainer recvFrame,
-                              DJI::OSDK::UserData userData) {
+void DjiRos::onReceive400HzData(Vehicle *vehicle,
+                                RecvContainer recvFrame,
+                                DJI::OSDK::UserData userData) {
   DjiRos *p = (DjiRos *) userData;
 
   Telemetry::TypeMap<Telemetry::TOPIC_HARD_SYNC>::type hs_data =
