@@ -1,72 +1,88 @@
 /** @file dji_sdk.h
- *  @version 3.1.8
- *  @date July 29th, 2016
+ *  @version 3.3
+ *  @date May, 2017
  *
  *  @brief
- *  This file lists all functionalities as a part of
- *	the messages, services and actions in ROS.
+ *  Definitions and Enums for client code to use dji_sdk ros wrapper
  *
- *  @copyright 2016 DJI. All rights reserved.
+ *  @copyright 2017 DJI. All rights reserved.
  *
  */
 
-#ifndef SDK_LIBRARY_H
-#define SDK_LIBRARY_H
+#ifndef PROJECT_DJI_SDK_H_H
+#define PROJECT_DJI_SDK_H_H
+#include <djiosdk/dji_control.hpp>
+#include <djiosdk/dji_status.hpp>
+namespace DJISDK {
 
-#define C_EARTH (double)6378137.0
-#define C_PI (double)3.141592653589793
-#define DEG2RAD(DEG) ((DEG) * ((C_PI) / (180.0)))
+enum FlightControlFlag
+{
+  HORIZONTAL_ANGLE         = DJI::OSDK::Control::HORIZONTAL_ANGLE,
+  HORIZONTAL_VELOCITY      = DJI::OSDK::Control::HORIZONTAL_VELOCITY,
+  HORIZONTAL_POSITION      = DJI::OSDK::Control::HORIZONTAL_POSITION,
+  HORIZONTAL_ANGULAR_RATE  = DJI::OSDK::Control::HORIZONTAL_ANGULAR_RATE,
 
-//! SDK library
-#include <djiosdk/dji_vehicle.hpp>
+  VERTICAL_VELOCITY = DJI::OSDK::Control::VERTICAL_VELOCITY,
+  VERTICAL_POSITION = DJI::OSDK::Control::VERTICAL_POSITION,
+  VERTICAL_THRUST   = DJI::OSDK::Control::VERTICAL_THRUST,
 
-//! ROS standard msgs
-#include <geometry_msgs/Quaternion.h>
-#include <geometry_msgs/Vector3Stamped.h>
-#include <sensor_msgs/Imu.h>
-#include <sensor_msgs/NavSatFix.h>
-#include <std_msgs/UInt8.h>
+  YAW_ANGLE = DJI::OSDK::Control::YAW_ANGLE,
+  YAW_RATE  = DJI::OSDK::Control::YAW_RATE,
 
-////msgs
-#include <djiros/FlightControl.h>
-#include <djiros/FlightControlAdvanced.h>
-#include <djiros/FlightControlAngularRateVertPos.h>
-#include <djiros/FlightControlAttiVertPos.h>
-#include <djiros/FlightControlPosYaw.h>
-#include <djiros/FlightControlVelYawRate.h>
-#include <djiros/Gimbal.h>
-#include <djiros/MobileData.h>
+  HORIZONTAL_GROUND = DJI::OSDK::Control::HORIZONTAL_GROUND,
+  HORIZONTAL_BODY   = DJI::OSDK::Control::HORIZONTAL_BODY,
 
-////srvs
-//! service headers
-#include <djiros/Activation.h>
-#include <djiros/CameraAction.h>
-#include <djiros/DroneArmControl.h>
-#include <djiros/DroneTaskControl.h>
-#include <djiros/MFIOConfig.h>
-#include <djiros/MFIOSetValue.h>
-#include <djiros/SDKControlAuthority.h>
-#include <djiros/SendMobileData.h>
+  STABLE_DISABLE = DJI::OSDK::Control::STABLE_DISABLE,
+  STABLE_ENABLE  = DJI::OSDK::Control::STABLE_ENABLE
+};
 
-//! mission service headers
-// missionManager
-#include <djiros/MissionStatus.h>
-// waypoint
-#include <djiros/MissionWpAction.h>
-#include <djiros/MissionWpGetInfo.h>
-#include <djiros/MissionWpGetSpeed.h>
-#include <djiros/MissionWpSetSpeed.h>
-#include <djiros/MissionWpUpload.h>
-// hotpoint
-#include <djiros/MissionHpAction.h>
-#include <djiros/MissionHpGetInfo.h>
-#include <djiros/MissionHpResetYaw.h>
-#include <djiros/MissionHpUpdateRadius.h>
-#include <djiros/MissionHpUpdateYawRate.h>
-#include <djiros/MissionHpUpload.h>
-// hardsync
-#include <djiros/SetHardSync.h>
+enum DisplayMode
+{
+  /*! This mode requires the user to manually
+   * control the aircraft to remain stable in air. */
+  MODE_MANUAL_CTRL=DJI::OSDK::VehicleStatus::MODE_MANUAL_CTRL,
+  /*! In this mode, the aircraft can keep
+   * attitude stabilization and only use the
+   * barometer for positioning to control the altitude. <br>
+   * The aircraft can not autonomously locate and hover stably.*/
+  MODE_ATTITUDE=DJI::OSDK::VehicleStatus::MODE_ATTITUDE,
 
-namespace dji_sdk=djiros;
+  /*! The aircraft is in normal GPS mode. <br>
+   * In normal GPS mode, the aircraft can
+   * autonomously locate and hover stably. <br>
+   *  The sensitivity of the aircraft to the
+   *  command response is moderate.
+   */
+  MODE_P_GPS=DJI::OSDK::VehicleStatus::MODE_P_GPS,
+  /*! In hotpoint mode */
+  MODE_HOTPOINT_MODE=DJI::OSDK::VehicleStatus::MODE_HOTPOINT_MODE,
+  /*! In this mode, user can push the throttle
+   * stick to complete stable take-off. */
+  MODE_ASSISTED_TAKEOFF=DJI::OSDK::VehicleStatus::MODE_ASSISTED_TAKEOFF,
+  /*! In this mode, the aircraft will autonomously
+   * start motor, ascend and finally hover. */
+  MODE_AUTO_TAKEOFF=DJI::OSDK::VehicleStatus::MODE_AUTO_TAKEOFF,
+  /*! In this mode, the aircraft can land autonomously. */
+  MODE_AUTO_LANDING=DJI::OSDK::VehicleStatus::MODE_AUTO_LANDING,
+  /*! In this mode, the aircraft can antonomously return the
+   * last recorded Home Point. <br>
+   * There are three types of this mode: Smart RTH(Return-to-Home),
+   * Low Batterry RTH, and Failsafe RTTH.  */
+  MODE_NAVI_GO_HOME=DJI::OSDK::VehicleStatus::MODE_NAVI_GO_HOME,
+  /*! In this mode, the aircraft is controled by SDK API. <br>
+   * User can directly define the control mode of horizon
+   * and vertical directions and send control datas to aircraft. */
+  MODE_NAVI_SDK_CTRL=DJI::OSDK::VehicleStatus::MODE_NAVI_SDK_CTRL,
+  
+  /*! drone is forced to land, might due to low battery */
+  MODE_FORCE_AUTO_LANDING=DJI::OSDK::VehicleStatus::MODE_FORCE_AUTO_LANDING,
+  /*! drone will search for the last position where the rc is not lost */
+  MODE_SEARCH_MODE =DJI::OSDK::VehicleStatus::MODE_SEARCH_MODE,
+  /*! Mode for motor starting. <br>
+   * Every time user unlock the motor, this will be the first mode. */
+  MODE_ENGINE_START = DJI::OSDK::VehicleStatus::MODE_ENGINE_START
+};
+}
 
-#endif
+
+#endif //PROJECT_DJI_SDK_H_H

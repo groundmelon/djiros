@@ -1,4 +1,3 @@
-#length(data) <= 100
-uint8[] data
+uint8[] data  #length(data) <= 100
 ---
 bool result

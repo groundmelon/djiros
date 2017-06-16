@@ -1,4 +1,3 @@
-# 0-7
-uint8 channel
-uint32 init_on_time_us
+uint8 channel   # 0-7
+uint32 init_on_time_us    # on time for pwm duty cycle in micro-seconds
 ---

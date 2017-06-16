@@ -1,11 +1,11 @@
 /** @file dji_sdk_node_mobile_comm.cpp
- *  @version 3.--------
- *  @date ----------
+ *  @version 3.3
+ *  @date May, 2017
  *
  *  @brief
- *  ----------
+ *  Implementation of the mobile communication functions of DJISDKNode
  *
- *  @copyright ---- DJI. All rights reserved.
+ *  @copyright 2017 DJI. All rights reserved.
  *
  */
 

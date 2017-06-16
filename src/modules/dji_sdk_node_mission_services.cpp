@@ -1,11 +1,11 @@
 /** @file dji_sdk_node_mission_services.cpp
- *  @version 3.1.8
- *  @date July 29th, 2016
+ *  @version 3.3
+ *  @date May, 2017
  *
  *  @brief
- *  All the mission callbacks are implemented here.
+ *  Implementation of the mission functions of DJISDKNode
  *
- *  @copyright 2016 DJI. All rights reserved.
+ *  @copyright 2017 DJI. All rights reserved.
  *
  */
 
@@ -19,8 +19,6 @@ DJISDKNode::missionStatusCallback(dji_sdk::MissionStatus::Request&  request,
 
   response.waypoint_mission_count = vehicle->missionManager->wayptCounter;
   response.hotpoint_mission_count = vehicle->missionManager->hotptCounter;
-
-  return true;
 }
 
 bool
@@ -33,15 +31,21 @@ DJISDKNode::missionWpUploadCallback(
   //! initialize waypoint mission related info
   ACK::ErrorCode                  initAck;
   DJI::OSDK::WayPointInitSettings wpInitData;
-  wpInitData.indexNumber  = (int)request.waypoint_task.mission_waypoint.size();
-  wpInitData.maxVelocity  = request.waypoint_task.velocity_range;
-  wpInitData.idleVelocity = request.waypoint_task.idle_velocity;
-  wpInitData.finishAction = request.waypoint_task.action_on_finish;
-  wpInitData.executiveTimes = request.waypoint_task.mission_exec_times;
-  wpInitData.yawMode        = request.waypoint_task.yaw_mode;
-  wpInitData.traceMode      = request.waypoint_task.trace_mode;
-  wpInitData.RCLostAction   = request.waypoint_task.action_on_rc_lost;
-  wpInitData.gimbalPitch    = request.waypoint_task.gimbal_pitch_mode;
+  wpInitData.indexNumber  = (unsigned char)request.waypoint_task.mission_waypoint.size();
+  wpInitData.maxVelocity  = (float)request.waypoint_task.velocity_range;
+  wpInitData.idleVelocity = (float)request.waypoint_task.idle_velocity;
+  wpInitData.finishAction = (unsigned char)request.waypoint_task.action_on_finish;
+  wpInitData.executiveTimes = (unsigned char)request.waypoint_task.mission_exec_times;
+  wpInitData.yawMode        = (unsigned char)request.waypoint_task.yaw_mode;
+  wpInitData.traceMode      = (unsigned char)request.waypoint_task.trace_mode;
+  wpInitData.RCLostAction   = (unsigned char)request.waypoint_task.action_on_rc_lost;
+  wpInitData.gimbalPitch    = (unsigned char)request.waypoint_task.gimbal_pitch_mode;
+  wpInitData.latitude = 0.0;
+  wpInitData.longitude = 0.0;
+  wpInitData.altitude = 0.0;
+  for (int i = 0; i < 16; i++){  
+    wpInitData.reserved[i] = 0;
+  } 
 
   initAck = vehicle->missionManager->init(DJI_MISSION_TYPE::WAYPOINT,
                                           WAIT_TIMEOUT, &wpInitData);

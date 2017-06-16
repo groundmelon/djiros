@@ -33,8 +33,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
 )
 
-## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(DJIOSDK REQUIRED)
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -44,15 +43,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  FlightControl.msg
-  FlightControlAdvanced.msg
-  FlightControlAngularRateVertPos.msg
-  FlightControlAttiVertPos.msg
-  FlightControlPosYaw.msg
-  FlightControlVelYawRate.msg
   Gimbal.msg
   Waypoint.msg
-  WaypointList.msg
   MobileData.msg
   MissionWaypointAction.msg
   MissionWaypoint.msg
@@ -64,25 +56,24 @@ add_message_files(
 add_service_files(
   FILES
   Activation.srv
-  AttitudeControl.srv
   CameraAction.srv
+  DroneArmControl.srv
   DroneTaskControl.srv
-  SDKControlAuthority.srv
   MFIOConfig.srv
   MFIOSetValue.srv
-  DroneArmControl.srv
+  MissionHpAction.srv
+  MissionHpGetInfo.srv
+  MissionHpResetYaw.srv
+  MissionHpUpdateRadius.srv
+  MissionHpUpdateYawRate.srv
+  MissionHpUpload.srv
   MissionStatus.srv
   MissionWpAction.srv
-  MissionHpAction.srv
-  MissionWpUpload.srv
-  MissionWpSetSpeed.srv
-  MissionWpGetSpeed.srv
   MissionWpGetInfo.srv
-  MissionHpUpload.srv
-  MissionHpGetInfo.srv
-  MissionHpUpdateYawRate.srv
-  MissionHpUpdateRadius.srv
-  MissionHpResetYaw.srv
+  MissionWpGetSpeed.srv
+  MissionWpSetSpeed.srv
+  MissionWpUpload.srv
+  SDKControlAuthority.srv
   SendMobileData.srv
   SetHardSync.srv
 )
@@ -121,10 +112,8 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 
-add_subdirectory(OSDK/onboardsdk)
-
-file(GLOB DJI_OSDK_ROS_SOURCES src/modules/*.cpp) 
 file(GLOB DJIROS_SOURCES src/djiros/DjiRos*.cpp) 
+file(GLOB DJI_OSDK_ROS_SOURCES src/modules/*.cpp) 
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -157,16 +146,15 @@ add_executable(djiros_node
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(djiros_node 
-  djiosdk-core 
   djiros_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(djiros_node
    ${catkin_LIBRARIES}
    ${mvIMPACT_LIBRARIES}
-   djiosdk-core
-   bfd
-   dl
+   ${DJIOSDK_LIBRARIES}
+        dl
+     bfd
 )
 
 if (ENABLE_DJIFOX)
@@ -180,10 +168,13 @@ if (ENABLE_DJIFOX)
   target_link_libraries(djifox_node
      ${catkin_LIBRARIES}
      ${mvIMPACT_LIBRARIES}
-     djiosdk-core
-     bfd
+     ${DJIOSDK_LIBRARIES}
      dl
+     bfd
   )
+
+  add_dependencies(djifox_node 
+    djiros_generate_messages_cpp)
 
 endif(ENABLE_DJIFOX)
 

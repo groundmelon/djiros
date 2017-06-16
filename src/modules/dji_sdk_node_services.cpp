@@ -1,11 +1,11 @@
 /** @file dji_sdk_node_services.cpp
- *  @version 3.1.8
- *  @date July 29th, 2016
+ *  @version 3.3
+ *  @date May, 2017
  *
  *  @brief
- *  All the purchase callbacks are implemented here.
+ *  Implementation of the general services of DJISDKNode
  *
- *  @copyright 2016 DJI. All rights reserved.
+ *  @copyright 2017 DJI. All rights reserved.
  *
  */
 
@@ -213,7 +213,6 @@ DJISDKNode::MFIOConfigCallback(dji_sdk::MFIOConfig::Request&  request,
                         (MFIO::CHANNEL)request.channel,
                         (uint32_t)request.init_on_time_us,
                         (uint16_t)request.pwm_freq, WAIT_TIMEOUT);
-  return true;
 }
 
 bool
@@ -224,7 +223,6 @@ DJISDKNode::MFIOSetValueCallback(dji_sdk::MFIOSetValue::Request&  request,
 
   vehicle->mfio->setValue((MFIO::CHANNEL)request.channel,
                           (uint32_t)request.init_on_time_us, WAIT_TIMEOUT);
-  return true;
 }
 
 bool
