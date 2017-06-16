@@ -18,25 +18,36 @@ DjiRos::DjiRos(ros::NodeHandle &nh, ros::NodeHandle &nh_private)
       m_verbose_output(false),
       m_hwsync_ack_count(0) {
   nh_private.param("sensor_mode", sensor_mode, false); // only publish or publish + control
+  nh_private.param("serial_name",   serial_device, std::string("/dev/ttyUSB0"));
+  nh_private.param("baud_rate",     baud_rate, 921600);
+  nh_private.param("app_id",        app_id,    123456);
+  nh_private.param("app_version",   app_version, 1);
+  nh_private.param("enc_key",       enc_key, std::string("abcd1234"));
+  nh_private.param("uart_or_usb",   uart_or_usb, 0); // chosse uart as default
+  nh_private.param("drone_version", drone_version, std::string("M100")); // choose M100 as default
+  nh_private.param("gravity_const", gravity_const, 9.801);
+  nh_private.param("align_time",    align_time_with_FC, true);
+  nh_private.param("use_broadcast", user_select_BC, false);
 
   // SDK initialization
-  if (!initVehicle(nh_private)) {
+  if (!initVehicle(nh_private))
+  {
+    ROS_ERROR("Vehicle initialization failed");
     throw std::runtime_error("initVehicle failed");
   }
 
-//    if (!initFlightControl(nh_private))
-//    {
-//        throw std::runtime_error("initFlightControl failed");
-//    }
-
-  if (!sensor_mode) {
-    if (!initSubscriber(nh_private)) {
-      throw std::runtime_error("initSubscriber failed");
+  else
+  {
+    if (!sensor_mode) {
+      if (!initSubscriber(nh_private)) {
+        throw std::runtime_error("initSubscriber failed");
+      }
     }
-  }
 
-  if (!initPublisher(nh_private)) {
-    throw std::runtime_error("initPublisher failed");
+    if (!initPublisher(nh_private)) {
+      throw std::runtime_error("initPublisher failed");
+    }
+    
   }
 
   // Ros related initialization

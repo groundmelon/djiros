@@ -74,18 +74,18 @@ bool
 DJISDKNode::initVehicle(ros::NodeHandle& nh_private)
 {
   bool threadSupport = true;
-  LinuxSerialDevice* linuxSerialDevice = new LinuxSerialDevice(serial_device.c_str(),baud_rate);
-  linuxSerialDevice->init();
-  bool setupStatus = validateSerialDevice(linuxSerialDevice);
-  if(!setupStatus)
-  {
-    delete (linuxSerialDevice);
-    return false;
-  }
-  else
-  {
-    delete(linuxSerialDevice);
-  }
+  // LinuxSerialDevice* linuxSerialDevice = new LinuxSerialDevice(serial_device.c_str(),baud_rate);
+  // linuxSerialDevice->init();
+  // bool setupStatus = validateSerialDevice(linuxSerialDevice);
+  // if(!setupStatus)
+  // {
+  //   delete (linuxSerialDevice);
+  //   return false;
+  // }
+  // else
+  // {
+  //   delete(linuxSerialDevice);
+  // }
 
   //! @note currently does not work without thread support
   vehicle = new Vehicle(serial_device.c_str(), baud_rate, threadSupport);
