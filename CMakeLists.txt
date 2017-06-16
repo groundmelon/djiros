@@ -153,8 +153,6 @@ target_link_libraries(djiros_node
    ${catkin_LIBRARIES}
    ${mvIMPACT_LIBRARIES}
    ${DJIOSDK_LIBRARIES}
-        dl
-     bfd
 )
 
 if (ENABLE_DJIFOX)
@@ -169,8 +167,6 @@ if (ENABLE_DJIFOX)
      ${catkin_LIBRARIES}
      ${mvIMPACT_LIBRARIES}
      ${DJIOSDK_LIBRARIES}
-     dl
-     bfd
   )
 
   add_dependencies(djifox_node 

@@ -57,8 +57,5 @@ Subscribers:
 ```
 <!-- * Subscriber "~gimbal_ctrl" and "~gimbal_speed_ctrl" for control the gimbal -->
 
-#### TODO ####
+<!-- #### TODO #### -->
 
-* Remove backwards.cpp
-
-* Remove submodule when OSDK is released

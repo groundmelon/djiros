@@ -8,12 +8,12 @@
 #include <djiros/DjiRos.h>
 #include "../bluefox2/camera.h"
 
-#define BACKWARD_HAS_BFD 1
-#include "backward.hpp"
+// #define BACKWARD_HAS_BFD 1
+// #include "backward.hpp"
 
-namespace backward {
-backward::SignalHandling sh;
-}
+// namespace backward {
+// backward::SignalHandling sh;
+// }
 
 bool g_shutdown_required;
 sighandler_t g_last_signal_handler;
