@@ -1,4 +1,4 @@
-## Step by Step Tutorial to Use This Node with DJI A3 ##
+## Step by Step Tutorial to Use This Package with DJI A3 ##
 
 If you don't need IMU-BlueFOX Camera synchronization, you can safely skip steps marked by [SYNC].
 
@@ -24,7 +24,16 @@ Please PR or post issues if something is not clear or make you confusing.
 
 ### Software Installation ###
 
-1. Follow [DJI-Onboard-SDK-URL-TODO](http://todo) to install the onboard-sdk core lib into your system.
+1. Follow [DJI-Onboard-SDK Documentation](https://developer.dji.com/onboard-sdk/documentation/sample-doc/sample-setup.html#linux-oes) to install the [dji-sdk/Onboard-SDK](https://github.com/dji-sdk/Onboard-SDK) into your system. Generally, you can do it as
+	```
+	git clone https://github.com/dji-sdk/Onboard-SDK.git 
+	cd Onboard-SDK/
+	mkdir build
+	cd build/
+	cmake .. 
+	make -j
+	sudo make install
+	```
 
 2. In your catkin workspace, clone this repo: ```git clone https://github.com/groundmelon/djiros.git```.
 
@@ -46,12 +55,12 @@ Please PR or post issues if something is not clear or make you confusing.
 
 6. If no sync is needed, it is advised to set ```align_with_fmu``` as ```false```.
 
-7. Remember to giant permission for operating the serial ports for your user. There are many methods, such as [add your user into group dialout](https://askubuntu.com/questions/373096/how-do-i-permanently-change-permissions-for-dev-ttys0), or follow [this tutorial](http://hintshop.ludvig.co.nz/show/persistent-names-usb-serial-devices/) to set mode as 0666 by udev. For the latter method, [an example rule file](../docs/99-ftdi.rules) is provided.
+7. Remember to grant permission for operating the serial ports. There are many methods, such as [add your user into group dialout](https://askubuntu.com/questions/373096/how-do-i-permanently-change-permissions-for-dev-ttys0), or follow [this tutorial](http://hintshop.ludvig.co.nz/show/persistent-names-usb-serial-devices/) to set mode as 0666 by udev. For the latter method, [an example rule file](../docs/99-ftdi.rules) is provided.
 
 8. [SYNC] Edit [launch/djifox.launch](../launch/djifox.launch), set your serial number of the mvBlueFOX camera in the field ```camera0/serial```. Other camera parameters can be set accordingly. Typically, ```fast_mode: false``` is for fps <= 25, and ```fast_mode: true``` is for 30 <= fps < 50.
 
-### Run the Node ###
+### Launch the Package ###
 
-1. Run the node is very simple: ``` roslaunch djiros djiros.launch ``` or [SYNC] ``` roslaunch djiros djifox.launch ```
+1. Use roslaunch to launch the nodes: ``` roslaunch djiros djiros.launch ``` or [SYNC] ``` roslaunch djiros djifox.launch ```
 
 2. If you see some printing of "NEW DEVICE", please make sure that your DJI GO has Internet access and try again and again for several times.

@@ -1,6 +1,6 @@
-## A modified [TODO/OSDK(https://todo) ##
+## A modified [dji-sdk/Onboard-SDK-ROS](https://github.com/dji-sdk/Onboard-SDK-ROS) ##
 
-This is a modified version of TODO, which uses standard ros message types, providies limited function of TODO.
+This is a modified version of [dji-sdk/Onboard-SDK-ROS](https://github.com/dji-sdk/Onboard-SDK-ROS), which uses standard ros message types, provides limited function of [dji-sdk/Onboard-SDK-ROS](https://github.com/dji-sdk/Onboard-SDK-ROS).
 
 ### For Beginners, Please Follow [Step-by-Step Tutorial](docs/step_by_step_tutorial.md) ###
 
@@ -8,7 +8,7 @@ This is a modified version of TODO, which uses standard ros message types, provi
 
 * FindEigen.cmake from **ceres-solver** is used. Please resolve it accordingly if you meet some problem about Eigen.
 
-* Remember to pull the submodule OSDK, such as ```git submodule init && git submodule update```, and follow instructions of [DJI-OSDK](https://github.com/HKUST-Aerial-Robotics/OSDK) to install it into the system
+* Remember to install [dji-sdk/Onboard-SDK](https://github.com/dji-sdk/Onboard-SDK). Follow instructions of [DJI-Onboard-SDK Documentation](https://developer.dji.com/onboard-sdk/documentation/sample-doc/sample-setup.html#linux-oes) to install it into the system. 
 
 * If you don't need mvBlueFOX synchronization, just [set ENABLE_DJIFOX to false](CMakeLists.txt#L22) to eliminate compile errors about mvBlueFOX drivers. If you need it, please install [the bluefox camera drivers](https://www.matrix-vision.com/USB2.0-single-board-camera-mvbluefox-mlc.html).
 
