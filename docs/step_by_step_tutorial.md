@@ -28,11 +28,11 @@ Please PR or post issues if something is not clear or make you confusing.
 
 2. In your catkin workspace, clone this repo: ```git clone https://github.com/groundmelon/djiros.git```.
 
-3. If you do not need mvBlueFOX synchronization, just **set ENABLE_DJIFOX to false** in [CMakeLists.txt:22](CMakeLists.txt#L22) to eliminate compile errors about mvBlueFOX drivers. 
+3. If you do not need mvBlueFOX synchronization, just **set ENABLE_DJIFOX to false** in [CMakeLists.txt:22](../CMakeLists.txt#L22) to eliminate compile errors about mvBlueFOX drivers. 
 
 4. [SYNC] If you need mvBlueFOX synchronization, please install the [mvBlueFOX Camera Driver](https://www.matrix-vision.com/USB2.0-single-board-camera-mvbluefox-mlc.html).
 
-5. By default, the [launch files](launch/) will load environment variables for APPID and ENCKEY. You can set them in your environment, for example, 
+5. By default, the [launch files](../launch/) will load environment variables for APPID and ENCKEY. You can set them in your environment, for example, 
 
 	```
 	echo "export DJIROS_APPID=1234567" >> ~/.bashrc
@@ -40,15 +40,15 @@ Please PR or post issues if something is not clear or make you confusing.
 	source ~/.bashrc
 	``` 
 
-	Alternatively, you can edit [launch/djiros.launch](launch/djiros.launch) or [launch/djifox.launch (with SYNC)](launch/djifox.launch), and fill in your APPID and ENCKEY in the parameter fields. 
+	Alternatively, you can edit [launch/djiros.launch](../launch/djiros.launch) or [launch/djifox.launch (with SYNC)](../launch/djifox.launch), and fill in your APPID and ENCKEY in the parameter fields. 
 
 	For members of [HKUST-Aerial-Robotics-Group](https://uav.ust.hk), please see ```Dropbox/reading/code/uavteam/DJISDK_APP_KEY.txt``` for id and key. 
 
 6. If no sync is needed, it is advised to set ```align_with_fmu``` as ```false```.
 
-7. Remember to giant permission for operating the serial ports for your user. There are many methods, such as [add your user into group dialout](https://askubuntu.com/questions/373096/how-do-i-permanently-change-permissions-for-dev-ttys0), or follow [this tutorial](http://hintshop.ludvig.co.nz/show/persistent-names-usb-serial-devices/) to set mode as 0666 by udev. For the latter method, [an example rule file](docs/99-ftdi.rules) is provided.
+7. Remember to giant permission for operating the serial ports for your user. There are many methods, such as [add your user into group dialout](https://askubuntu.com/questions/373096/how-do-i-permanently-change-permissions-for-dev-ttys0), or follow [this tutorial](http://hintshop.ludvig.co.nz/show/persistent-names-usb-serial-devices/) to set mode as 0666 by udev. For the latter method, [an example rule file](../docs/99-ftdi.rules) is provided.
 
-8. [SYNC] Edit [launch/djifox.launch](launch/djifox.launch), set your serial number of the mvBlueFOX camera in the field ```camera0/serial```. Other camera parameters can be set accordingly. Typically, ```fast_mode: false``` is for fps <= 25, and ```fast_mode: true``` is for 30 <= fps < 50.
+8. [SYNC] Edit [launch/djifox.launch](../launch/djifox.launch), set your serial number of the mvBlueFOX camera in the field ```camera0/serial```. Other camera parameters can be set accordingly. Typically, ```fast_mode: false``` is for fps <= 25, and ```fast_mode: true``` is for 30 <= fps < 50.
 
 ### Run the Node ###
 
