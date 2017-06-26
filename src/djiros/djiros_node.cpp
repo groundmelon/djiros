@@ -6,7 +6,6 @@
 #include <thread>
 
 #include <djiros/DjiRos.h>
-#include "../bluefox2/camera.h"
 
 // #define BACKWARD_HAS_BFD 1
 // #include "backward.hpp"
