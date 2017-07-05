@@ -338,6 +338,130 @@ bool Camera::grab_image_data() {
         ROS_INFO_COND(m_verbose_output, "imageRequestWaitFor %7.3f ms", (s2 - s1).toSec() * 1000.0);
     }
 
+    // wait for imu stamp
+
+    bool status = true;
+    for (auto& item : ids) {
+        const int devIndex = item.second;
+        if (!(fi[devIndex]->isRequestNrValid(requestNr[devIndex]))) {
+            status = false;
+            ROS_ERROR("[djiros/cam] Camera %s request timeout.", item.first.c_str());
+        }
+    }
+
+    if (status) {
+        int ok_cnt = 0;
+        for (auto& item : ids) {
+            const int devIndex = item.second;
+            pRequest[devIndex] = fi[devIndex]->getRequest(requestNr[devIndex]);
+            ok_cnt += pRequest[devIndex]->isOK();
+
+            if (!pRequest[devIndex]->isOK()) {
+                ROS_ERROR("[djiros/cam] Camera %s request failed.", item.first.c_str());
+            }
+        }
+
+        if (ok_cnt == cam_cnt) {
+            for (auto& item : ids) {
+                const int devIndex = item.second;
+                const std::string& serial = item.first;
+
+                int Channels = pRequest[devIndex]->imageChannelCount.read();
+                int Height = pRequest[devIndex]->imageHeight.read();
+                int Width = pRequest[devIndex]->imageWidth.read();
+                int Step = Width * Channels;
+                std::string Encoding = Channels == 1 ? sensor_msgs::image_encodings::MONO8
+                                                     : sensor_msgs::image_encodings::BGR8;
+
+                img_buffer.at(serial).height = Height;
+                img_buffer.at(serial).width = Width;
+                img_buffer.at(serial).step = Step;
+                img_buffer.at(serial).encoding = Encoding;
+
+                ROS_ASSERT(static_cast<int>(Step * Height) == pRequest[devIndex]->imageSize.read());
+
+                img_buffer.at(serial).data.resize(Step * Height);
+                std::memcpy(&img_buffer.at(serial).data[0],
+                            pRequest[devIndex]->imageData.read(),
+                            pRequest[devIndex]->imageSize.read());
+
+                img_buffer.at(serial).header.frame_id = boost::str(
+                    boost::format("expose_us:%d") % pRequest[devIndex]->infoExposeTime_us.read());
+            }
+
+            // Release capture request
+            for (auto& item : ids) {
+                const int devIndex = item.second;
+                fi[devIndex]->imageRequestUnlock(requestNr[devIndex]);
+            }
+
+            status = true;
+
+        } else {
+            ROS_ERROR("Not all requests are vaild, discard all data.");
+            // Clear all image received and reset capture
+            for (auto& item : ids) {
+                const int devIndex = item.second;
+                fi[devIndex]->imageRequestUnlock(requestNr[devIndex]);
+            }
+
+            status = false;
+        }
+    } else {
+        ROS_ERROR("[djiros/cam] Timeout request/s.");
+        // Clear all image received and reset capture
+        for (auto& item : ids) {
+            const int devIndex = item.second;
+            if (fi[devIndex]->isRequestNrValid(requestNr[devIndex])) {
+                pRequest[devIndex] = fi[devIndex]->getRequest(requestNr[devIndex]);
+                fi[devIndex]->imageRequestUnlock(requestNr[devIndex]);
+            }
+        }
+        status = false;
+    }
+    return status;
+}
+
+bool Camera::grab_image_data_async() {
+    ros::Time tm1 = ros::Time::now();
+    // set signal to worker
+    async_grab_imu_received = true;
+
+    async_grab_future_rtnval.wait();
+    // get status from worker
+    bool status = async_grab_future_rtnval.get();
+    ros::Time tm2 = ros::Time::now();
+    ROS_INFO_COND(m_verbose_output, "async grab costs %.3f", (tm2-tm1).toSec());
+    return status;
+}
+
+bool Camera::grab_image_data_worker() {
+    int requestNr[MAX_CAM_CNT] = {INVALID_ID};
+
+    for (auto& item : ids) {
+        ros::Time s1 = ros::Time::now();
+        const int devIndex = item.second;
+        requestNr[devIndex] = fi[devIndex]->imageRequestWaitFor(300);
+        ros::Time s2 = ros::Time::now();
+        ROS_INFO_COND(m_verbose_output, "imageRequestWaitFor %7.3f ms", (s2 - s1).toSec() * 1000.0);
+    }
+    // wait for imu stamp
+
+    ros::Time target_time = ros::Time::now() + ros::Duration(1.0);
+    
+    while (true) {
+        if (async_grab_imu_received.load())
+        {
+            break;
+        } 
+
+        if (ros::Time::now() > target_time) {
+            ROS_INFO("[djicam] Worker timeout!");
+            return false;
+        }
+        ros::Duration(1.0 / 1000).sleep();
+    }
+    
     bool status = true;
     for (auto& item : ids) {
         const int devIndex = item.second;
@@ -491,6 +615,8 @@ void Camera::process_slow_sync() {
 
     send_driver_request();
 
+    async_grab_future_rtnval = std::async(std::launch::async, std::bind(&Camera::grab_image_data_worker, this));
+
     ros::Rate r(m_fps);
     while (pnode.ok()) {
         send_hardware_request();
@@ -508,7 +634,7 @@ void Camera::process_slow_sync() {
         ROS_ASSERT(sync_ack.seq >= 0);
 
         // Get image from driver
-        if (grab_image_data()) {
+        if (grab_image_data_async()) {
             ROS_INFO_COND(m_verbose_output, "Grab data with seq[%d]", sync_ack.seq);
             ROS_ASSERT_MSG(sync_ack.seq == m_hwsync_grab_count,
                            "sync_ack.seq=%d, hwsync_grab_count=%d",
@@ -526,6 +652,8 @@ void Camera::process_slow_sync() {
         }
         m_hwsync_grab_count++;  // inc it whether grab success or failed.
         send_driver_request();
+
+        async_grab_future_rtnval = std::async(std::launch::async, std::bind(&Camera::grab_image_data_worker, this));
 
     END_OF_OUT_LOOP:
         r.sleep();

@@ -10,6 +10,10 @@
 #include <errno.h>
 #include <dynamic_reconfigure/server.h>
 #include <unordered_map>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <future>
 
 #include <djiros/HardwareSync.h>
 
@@ -82,6 +86,12 @@ class Camera
     bool initSingleMVDevice(unsigned int id, const CameraSetting& cs);
     void send_software_request();
     bool grab_image_data();
+
+    // Async grab related
+    std::atomic<bool> async_grab_imu_received;
+    std::future<bool> async_grab_future_rtnval;
+    bool grab_image_data_async();
+    bool grab_image_data_worker();
 
     // Hardware sync related
 public:

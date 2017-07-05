@@ -12,7 +12,7 @@
             # common setting and default individual settings
             verbose_output: true
             cam_cnt: 2
-            fps:  20
+            fps:  30
             gain: 1.0
             use_auto_exposure: false
             fast_mode: false
