@@ -22,6 +22,8 @@ Please PR or post issues if something is not clear or make you confusing.
 
 ![connection](connection.png)
 
+5. If you need stereo or more camera sync, please choose F1-F4 or F6-F8 similarly in 3 and connect the wire in the same way.
+
 ### Software Installation ###
 
 1. Follow [DJI-Onboard-SDK Documentation](https://developer.dji.com/onboard-sdk/documentation/sample-doc/sample-setup.html#linux-oes) to install the [dji-sdk/Onboard-SDK](https://github.com/dji-sdk/Onboard-SDK) into your system. Generally, you can do it as
