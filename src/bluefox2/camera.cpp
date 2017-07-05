@@ -279,7 +279,7 @@ bool Camera::initSingleMVDevice(unsigned int id, const CameraSetting& cs) {
     // prefill the capture queue. There can be more then 1 queue for some device, but only one for
     // now
     mvIMPACT::acquire::SystemSettings ss(devMgr[id]);
-    ss.requestCount.write(1);
+    ss.requestCount.write(4);
 
     // Trigger setting
     if (cs.is_slave) {
@@ -330,13 +330,13 @@ void Camera::send_software_request() {
 bool Camera::grab_image_data() {
     int requestNr[MAX_CAM_CNT] = {INVALID_ID};
 
-    // ros::Time s1 = ros::Time::now();
     for (auto& item : ids) {
+        ros::Time s1 = ros::Time::now();
         const int devIndex = item.second;
         requestNr[devIndex] = fi[devIndex]->imageRequestWaitFor(300);
+        ros::Time s2 = ros::Time::now();
+        ROS_INFO_COND(m_verbose_output, "imageRequestWaitFor %7.3f ms", (s2 - s1).toSec() * 1000.0);
     }
-    // ros::Time s2 = ros::Time::now();
-    // ROS_INFO("imageRequestWaitFor %7.3f ms", (s2 - s1).toSec() * 1000.0);
 
     bool status = true;
     for (auto& item : ids) {
@@ -459,7 +459,7 @@ bool Camera::wait_for_imu_ack(SyncAckInfo& sync_ack, int& queue_size) {
                     ROS_ERROR(
                         "Cannot sync! Image capturing is too slow! Try to decrease fps/exposure or "
                         "turn off aec!");
-                    ros::shutdown();
+                    //ros::shutdown();
                 }
                 // get first and erase it
                 sync_ack = m_hwsync->ack_queue.front();
